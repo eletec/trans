@@ -90,3 +90,8 @@ www/
 
 ## Journal des modifications
 - 2026-04-02 : Création du projet, analyse des besoins, définition de l'architecture
+- 2026-04-02 : Backend complet (Express + SQLite + JWT auth + routes API)
+- 2026-04-02 : Algorithme MAXRECTS porté en JS + solver multi-heuristique + groupement contigu
+- 2026-04-02 : Frontend React complet (saisie, visualisation 2D/3D, drag&drop, projets)
+- 2026-04-02 : Test : 7/7 palettes placées en une passe (BestShortSideFit auto-sélectionné)
+- 2026-04-02 : Initial commit + push GitHub
