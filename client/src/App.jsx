@@ -93,6 +93,33 @@ export default function App() {
       } finally {
         setPrefsLoaded(true);
       }
+      // Auto-load last project
+      try {
+        const { projects } = await api.getProjects();
+        if (projects && projects.length > 0) {
+          const { project } = await api.getProject(projects[0].id);
+          if (project) {
+            if (project.truck_config) setTruck(project.truck_config);
+            if (project.palette_data) setPalettes(project.palette_data);
+            if (project.result_data) setResult(project.result_data);
+            if (project.heuristic) setHeuristic(project.heuristic);
+            if (project.settings) {
+              const s = project.settings;
+              if (s.allowRotation !== undefined) setAllowRotation(s.allowRotation);
+              if (s.groupContiguous !== undefined) setGroupContiguous(s.groupContiguous);
+              if (s.maxTrucks !== undefined) setMaxTrucks(s.maxTrucks);
+              if (s.calcMode) setCalcMode(s.calcMode);
+              if (s.iterations !== undefined) setIterations(s.iterations);
+              if (s.marker !== undefined) setMarker(s.marker);
+              if (s.paletteTemplates) setPaletteTemplates(s.paletteTemplates);
+            }
+            setCurrentProjectId(project.id);
+            setCurrentProjectName(project.name);
+          }
+        }
+      } catch (e) {
+        // No projects yet
+      }
     })();
   }, [user]);
 
@@ -470,7 +497,7 @@ ${truckSections}
                         Camion {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} palette(s) — {trk.totalWeight}kg
                       </div>
                     )}
-                    <div style={{ minHeight: '300px' }}>
+                    <div style={{ height: '500px' }}>
                       {viewMode === '2d' ? (
                         <Canvas2D
                           truck={truck}
