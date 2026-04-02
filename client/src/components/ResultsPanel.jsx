@@ -60,11 +60,13 @@ export default function ResultsPanel({ result }) {
         </div>
       )}
 
-      {/* Log */}
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-500 hover:text-gray-700">Journal détaillé</summary>
-        <pre className="mt-2 bg-gray-900 text-green-400 p-3 rounded-lg overflow-auto max-h-[200px] font-mono text-[11px]">
-          {log?.join('\n')}
+      {/* Log — matching original format */}
+      <details open className="text-xs">
+        <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">
+          📝 Journal détaillé ({log?.length || 0} lignes)
+        </summary>
+        <pre className="mt-2 bg-gray-900 text-green-400 p-3 rounded-lg overflow-auto max-h-[300px] font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+{log?.join('\n')}
         </pre>
       </details>
     </div>

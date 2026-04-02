@@ -2,7 +2,15 @@ import React, { useContext } from 'react';
 import { AppContext } from '../App';
 
 export default function PaletteGrid() {
-  const { palettes, addPalette, updatePalette, removePalette, PALETTE_COLORS } = useContext(AppContext);
+  const { palettes, addPalette, updatePalette, removePalette, paletteTemplates, PALETTE_COLORS } = useContext(AppContext);
+
+  const applyTemplate = (index, templateName) => {
+    const tpl = paletteTemplates.find(t => t.name === templateName);
+    if (tpl) {
+      updatePalette(index, 'length', tpl.length);
+      updatePalette(index, 'width', tpl.width);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 flex-1 min-h-0 overflow-hidden flex flex-col">
@@ -21,6 +29,7 @@ export default function PaletteGrid() {
           <thead className="bg-gray-50 sticky top-0">
             <tr>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Réf</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Format</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">L (mm)</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">l (mm)</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">H (mm)</th>
@@ -40,6 +49,18 @@ export default function PaletteGrid() {
                     onChange={e => updatePalette(i, 'ref', e.target.value)}
                     className="w-14 border border-gray-200 rounded px-1 py-0.5 text-xs"
                   />
+                </td>
+                <td className="px-1 py-1">
+                  <select
+                    value={`${p.length}x${p.width}`}
+                    onChange={e => applyTemplate(i, e.target.value)}
+                    className="w-24 border border-gray-200 rounded px-1 py-0.5 text-xs bg-white"
+                  >
+                    <option value="">Manuel</option>
+                    {paletteTemplates.map(t => (
+                      <option key={t.name} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="px-1 py-1">
                   <input
@@ -104,7 +125,7 @@ export default function PaletteGrid() {
             ))}
             {palettes.length === 0 && (
               <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400 text-sm">
+                <td colSpan={10} className="text-center py-8 text-gray-400 text-sm">
                   Aucune palette — cliquez sur "+ Ajouter"
                 </td>
               </tr>

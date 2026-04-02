@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { AppContext } from '../App';
 
 export default function Layout({ children }) {
-  const { user, handleLogout, setShowPrefs, setShowProjects } = useContext(AppContext);
+  const { user, handleLogout, setShowPrefs, setShowProjects, setShowPaletteConfig } = useContext(AppContext);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -24,6 +24,12 @@ export default function Layout({ children }) {
                 className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 transition-colors"
               >
                 📁 Projets
+              </button>
+              <button
+                onClick={() => setShowPaletteConfig(true)}
+                className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 transition-colors"
+              >
+                📐 Config. Palettes
               </button>
               <button
                 onClick={() => setShowPrefs(true)}

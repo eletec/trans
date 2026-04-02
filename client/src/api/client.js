@@ -112,5 +112,13 @@ export const api = {
 
   async getHeuristics() {
     return request('/calculate/heuristics');
+  },
+
+  async getCacheStats() {
+    return request('/calculate/cache');
+  },
+
+  async clearCache() {
+    return request('/calculate/cache', { method: 'DELETE' });
   }
 };

@@ -6,7 +6,9 @@ export default function PreferencesDialog() {
     setShowPrefs, heuristic, setHeuristic,
     allowRotation, setAllowRotation,
     groupContiguous, setGroupContiguous,
-    maxTrucks, setMaxTrucks
+    maxTrucks, setMaxTrucks,
+    iterations, setIterations,
+    calcMode, setCalcMode
   } = useContext(AppContext);
 
   return (
@@ -57,6 +59,29 @@ export default function PreferencesDialog() {
             />
             <span className="text-sm text-gray-700">Grouper les palettes identiques (contigu)</span>
           </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mode de calcul par défaut</label>
+            <select
+              value={calcMode}
+              onChange={e => setCalcMode(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="preview">Preview — aperçu rapide (1 passe)</option>
+              <option value="calculate">Calculer — multi-heuristique déterministe</option>
+              <option value="simulation">Simulation — itérations aléatoires</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Itérations (mode simulation)</label>
+            <input
+              type="number" min={10} max={100000} value={iterations}
+              onChange={e => setIterations(Math.max(10, Number(e.target.value)))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+            <p className="text-xs text-gray-400 mt-1">Plus d'itérations = meilleur résultat mais plus lent</p>
+          </div>
         </div>
 
         <button

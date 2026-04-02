@@ -8,6 +8,7 @@ import View3D from './components/View3D';
 import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
+import PaletteConfigDialog from './components/PaletteConfigDialog';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -37,10 +38,25 @@ export default function App() {
   const [allowRotation, setAllowRotation] = useState(true);
   const [groupContiguous, setGroupContiguous] = useState(true);
   const [maxTrucks, setMaxTrucks] = useState(5);
+  const [calcMode, setCalcMode] = useState('calculate'); // 'preview' | 'calculate' | 'simulation'
+  const [iterations, setIterations] = useState(1000);
   const [showPrefs, setShowPrefs] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
+  const [showPaletteConfig, setShowPaletteConfig] = useState(false);
   const [activeTruckIndex, setActiveTruckIndex] = useState(0);
   const [error, setError] = useState('');
+
+  // Palette templates (like original "Configuration Palettes" dialog)
+  const [paletteTemplates, setPaletteTemplates] = useState([
+    { name: '2500x1000', length: 2500, width: 1000 },
+    { name: '2100x1000', length: 2100, width: 1000 },
+    { name: '1500x1000', length: 1500, width: 1000 },
+    { name: '1500x900',  length: 1500, width: 900 },
+    { name: '1400x1100', length: 1400, width: 1100 },
+    { name: '1200x800',  length: 1200, width: 800 },
+    { name: '1000x1200', length: 1000, width: 1200 },
+    { name: '600x800',   length: 600,  width: 800 },
+  ]);
 
   const handleLogin = (userData) => setUser(userData);
   const handleLogout = () => { api.logout(); setUser(null); };
@@ -67,8 +83,9 @@ export default function App() {
     setPalettes(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCalculate = async () => {
+  const handleCalculate = async (modeOverride) => {
     if (palettes.length === 0) { setError('Ajoutez au moins une palette'); return; }
+    const useMode = modeOverride || calcMode;
     setLoading(true);
     setError('');
     try {
@@ -76,6 +93,8 @@ export default function App() {
         palettes,
         truck,
         heuristic,
+        mode: useMode,
+        iterations: useMode === 'simulation' ? iterations : 0,
         allowRotation,
         groupContiguous,
         maxTrucks
@@ -116,10 +135,13 @@ export default function App() {
     result, setResult, loading, viewMode, setViewMode,
     heuristic, setHeuristic, allowRotation, setAllowRotation,
     groupContiguous, setGroupContiguous, maxTrucks, setMaxTrucks,
+    calcMode, setCalcMode, iterations, setIterations,
     activeTruckIndex, setActiveTruckIndex, error, setError,
     addPalette, updatePalette, removePalette,
     handleCalculate, handleDragPalette, handleLoadProject,
     handleLogout, showPrefs, setShowPrefs, showProjects, setShowProjects,
+    showPaletteConfig, setShowPaletteConfig,
+    paletteTemplates, setPaletteTemplates,
     PALETTE_COLORS
   };
 
@@ -133,18 +155,38 @@ export default function App() {
             <div className="w-full lg:w-[420px] flex flex-col gap-4 shrink-0">
               <TruckConfig />
               <PaletteGrid />
+              {/* Mode buttons — matching original Preview / Calculer */}
               <div className="flex gap-2">
                 <button
-                  onClick={handleCalculate}
+                  onClick={() => handleCalculate('preview')}
                   disabled={loading}
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg
-                             disabled:opacity-50 transition-colors shadow-md"
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-lg
+                             disabled:opacity-50 transition-colors shadow-md text-sm"
+                  title="Aperçu rapide (1 passe, pas d'optimisation)"
                 >
-                  {loading ? 'Calcul en cours...' : '🚛 Calculer'}
+                  {loading && calcMode === 'preview' ? '...' : '👁 Preview'}
+                </button>
+                <button
+                  onClick={() => handleCalculate('calculate')}
+                  disabled={loading}
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg
+                             disabled:opacity-50 transition-colors shadow-md text-sm"
+                  title="Calcul déterministe multi-heuristique"
+                >
+                  {loading && calcMode === 'calculate' ? '...' : '🚛 Calculer'}
+                </button>
+                <button
+                  onClick={() => handleCalculate('simulation')}
+                  disabled={loading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg
+                             disabled:opacity-50 transition-colors shadow-md text-sm"
+                  title={`Simulation ${iterations} itérations aléatoires`}
+                >
+                  {loading && calcMode === 'simulation' ? '...' : `🔄 Simulation`}
                 </button>
                 <button
                   onClick={() => { setResult(null); setError(''); }}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-4 rounded-lg transition-colors"
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-3 rounded-lg transition-colors"
                   title="Réinitialiser"
                 >
                   ↺
@@ -191,8 +233,11 @@ export default function App() {
                 )}
 
                 {result && (
-                  <span className="ml-auto text-sm text-gray-500">
-                    Heuristique: <strong>{result.heuristic}</strong>
+                  <span className="ml-auto text-sm text-gray-500 flex gap-3">
+                    <span>Mode: <strong>{result.mode}</strong></span>
+                    <span>Heuristique: <strong>{result.heuristic}</strong></span>
+                    {result.iterations > 1 && <span>{result.iterations} iter.</span>}
+                    {result.fromCache && <span className="text-green-600" title="Résultat depuis le cache">⚡ cache</span>}
                   </span>
                 )}
               </div>
@@ -223,6 +268,7 @@ export default function App() {
 
         {showPrefs && <PreferencesDialog />}
         {showProjects && <ProjectManager />}
+        {showPaletteConfig && <PaletteConfigDialog />}
       </Layout>
     </AppContext.Provider>
   );
