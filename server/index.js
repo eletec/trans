@@ -29,5 +29,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`ADC Trans server running on http://localhost:${PORT}`);
+  console.log(`Easy Packing server running on http://localhost:${PORT}`);
 });

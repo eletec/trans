@@ -13,7 +13,7 @@ export default function Layout({ children }) {
           <div className="flex items-center gap-3">
             <Truck className="w-7 h-7" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight">ADC Trans</h1>
+              <h1 className="text-xl font-bold tracking-tight">Easy Packing</h1>
               <p className="text-blue-200 text-xs">Optimisation chargement camions</p>
             </div>
           </div>
@@ -59,7 +59,7 @@ export default function Layout({ children }) {
 
       {/* Footer */}
       <footer className="bg-gray-100 border-t text-center py-2 text-xs text-gray-500">
-        ADC Trans © 2026 — Optimisation bin packing multi-camions
+        Easy Packing © 2026 — Optimisation bin packing multi-camions
       </footer>
     </div>
   );

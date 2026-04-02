@@ -74,17 +74,17 @@ export default function App() {
   const handleLogin = (userData) => setUser(userData);
   const handleLogout = () => { api.logout(); setUser(null); };
 
-  const addPalette = () => {
+  const addPalette = (template) => {
     setPalettes(prev => [...prev, {
       id: Date.now(),
-      ref: `P${prev.length + 1}`,
-      length: 1200,
-      width: 800,
+      ref: template?.label || `P${prev.length + 1}`,
+      length: template?.length || 1200,
+      width: template?.width || 800,
       height: 1500,
       weight: 500,
-      quantity: 1,
-      color: PALETTE_COLORS[prev.length % PALETTE_COLORS.length],
-      comment: ''
+      quantity: template?.quantity || 1,
+      color: template?.color || PALETTE_COLORS[prev.length % PALETTE_COLORS.length],
+      comment: template?.label || ''
     }]);
   };
 

@@ -1,9 +1,11 @@
-import React, { useContext } from 'react';
-import { Package } from 'lucide-react';
+import React, { useContext, useState } from 'react';
+import { Package, Plus } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function PaletteGrid() {
   const { palettes, addPalette, updatePalette, removePalette, paletteTemplates, PALETTE_COLORS } = useContext(AppContext);
+  const [quickTpl, setQuickTpl] = useState('');
+  const [quickQty, setQuickQty] = useState(1);
 
   const applyTemplate = (index, templateName) => {
     const tpl = paletteTemplates.find(t => t.name === templateName);
@@ -15,15 +17,47 @@ export default function PaletteGrid() {
     }
   };
 
+  const handleQuickAdd = () => {
+    const tpl = paletteTemplates.find(t => t.name === quickTpl);
+    if (tpl) {
+      addPalette({ ...tpl, quantity: quickQty });
+    } else {
+      addPalette({ quantity: quickQty });
+    }
+    setQuickQty(1);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 flex-1 min-h-0 overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Package className="w-4 h-4" /> Palettes</h3>
-        <button
-          onClick={addPalette}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+      </div>
+
+      {/* Quick-add bar: template + quantity + add button */}
+      <div className="flex gap-1.5 mb-3">
+        <select
+          value={quickTpl}
+          onChange={e => setQuickTpl(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         >
-          + Ajouter
+          <option value="">Manuel (1200×800)</option>
+          {paletteTemplates.map(t => (
+            <option key={t.name} value={t.name}>{t.name}{t.label ? ` — ${t.label}` : ''}</option>
+          ))}
+        </select>
+        <div className="flex items-center gap-1">
+          <label className="text-xs text-gray-500">Qté</label>
+          <input
+            type="number" min={1} max={99} value={quickQty}
+            onChange={e => setQuickQty(Math.max(1, Number(e.target.value)))}
+            className="w-14 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <button
+          onClick={handleQuickAdd}
+          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1"
+        >
+          <Plus className="w-4 h-4" /> Ajouter
         </button>
       </div>
 
