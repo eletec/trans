@@ -10,7 +10,7 @@ function Palette3D({ placement }) {
   const pz = (y + placedHeight / 2) / 100;
   const pw = placedWidth / 100;
   const pd = placedHeight / 100;
-  const label = `#${num || '?'}`;
+  const label = `${ref || '?'} #${num || '?'}`;
 
   return (
     <group position={[px, h3d / 2, pz]}>

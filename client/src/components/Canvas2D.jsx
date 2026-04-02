@@ -106,7 +106,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
       if (pw > 30 && ph > 15) {
         ctx.fillStyle = '#1e293b';
         ctx.font = 'bold 10px sans-serif';
-        const label = `#${p.num || (i + 1)}`;
+        const label = `${p.ref || '?'} #${p.num || (i + 1)}`;
         ctx.fillText(label, px + 3, py + 12);
 
         if (ph > 30) {
