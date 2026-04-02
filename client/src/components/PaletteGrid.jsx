@@ -9,6 +9,8 @@ export default function PaletteGrid() {
     if (tpl) {
       updatePalette(index, 'length', tpl.length);
       updatePalette(index, 'width', tpl.width);
+      if (tpl.color) updatePalette(index, 'color', tpl.color);
+      if (tpl.label) updatePalette(index, 'comment', tpl.label);
     }
   };
 

@@ -14,11 +14,21 @@ import { api } from './api/client';
 export const AppContext = createContext();
 
 const DEFAULT_TRUCK = {
-  length_cm: 1340,
-  width_cm: 242,
+  length_cm: 1360,
+  width_cm: 245,
   height_cm: 270,
   max_weight_kg: 24000
 };
+
+// Standard transport container presets
+const TRUCK_PRESETS = [
+  { name: 'Semi-remorque 13.6m', length_cm: 1360, width_cm: 245, height_cm: 270, max_weight_kg: 24000 },
+  { name: 'Porteur 7.7m', length_cm: 770, width_cm: 245, height_cm: 270, max_weight_kg: 11000 },
+  { name: 'Fourgon 20m³', length_cm: 430, width_cm: 210, height_cm: 220, max_weight_kg: 1200 },
+  { name: 'Container 20\'', length_cm: 590, width_cm: 235, height_cm: 239, max_weight_kg: 21770 },
+  { name: 'Container 40\'', length_cm: 1203, width_cm: 235, height_cm: 239, max_weight_kg: 26680 },
+  { name: 'Container 40\' HC', length_cm: 1203, width_cm: 235, height_cm: 269, max_weight_kg: 26460 },
+];
 
 const PALETTE_COLORS = [
   '#94a3b8', '#86efac', '#fde047', '#fca5a5', '#93c5fd',
@@ -45,17 +55,19 @@ export default function App() {
   const [showPaletteConfig, setShowPaletteConfig] = useState(false);
   const [activeTruckIndex, setActiveTruckIndex] = useState(0);
   const [error, setError] = useState('');
+  const [language, setLanguage] = useState('fr');
+  const [marker, setMarker] = useState(800); // marker line in cm (e.g. 800 = 8m porteur reference)
 
-  // Palette templates (like original "Configuration Palettes" dialog)
+  // Palette templates with color and label (like original "Configuration Palettes" dialog)
   const [paletteTemplates, setPaletteTemplates] = useState([
-    { name: '2500x1000', length: 2500, width: 1000 },
-    { name: '2100x1000', length: 2100, width: 1000 },
-    { name: '1500x1000', length: 1500, width: 1000 },
-    { name: '1500x900',  length: 1500, width: 900 },
-    { name: '1400x1100', length: 1400, width: 1100 },
-    { name: '1200x800',  length: 1200, width: 800 },
-    { name: '1000x1200', length: 1000, width: 1200 },
-    { name: '600x800',   length: 600,  width: 800 },
+    { name: '2500x1000', length: 2500, width: 1000, color: '#C0C0C0', label: 'PA2' },
+    { name: '2100x1000', length: 2100, width: 1000, color: '#00FF00', label: 'Mobilier C' },
+    { name: '1500x1000', length: 1500, width: 1000, color: '#0000FF', label: 'Mobilier B' },
+    { name: '1400x1100', length: 1400, width: 1100, color: '#FF0000', label: 'Mobilier A' },
+    { name: '1500x900',  length: 1500, width: 900,  color: '#FF00FF', label: 'Présentoirs' },
+    { name: '1200x800',  length: 1200, width: 800,  color: '#FFFF00', label: 'PA 1' },
+    { name: '1000x1200', length: 1000, width: 1200, color: '#FFA500', label: '' },
+    { name: '600x800',   length: 600,  width: 800,  color: '#00CED1', label: '' },
   ]);
 
   const handleLogin = (userData) => setUser(userData);
@@ -137,12 +149,13 @@ export default function App() {
     groupContiguous, setGroupContiguous, maxTrucks, setMaxTrucks,
     calcMode, setCalcMode, iterations, setIterations,
     activeTruckIndex, setActiveTruckIndex, error, setError,
+    language, setLanguage, marker, setMarker,
     addPalette, updatePalette, removePalette,
     handleCalculate, handleDragPalette, handleLoadProject,
     handleLogout, showPrefs, setShowPrefs, showProjects, setShowProjects,
     showPaletteConfig, setShowPaletteConfig,
     paletteTemplates, setPaletteTemplates,
-    PALETTE_COLORS
+    PALETTE_COLORS, TRUCK_PRESETS
   };
 
   return (

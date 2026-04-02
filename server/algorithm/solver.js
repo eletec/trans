@@ -126,9 +126,28 @@ function solve(params) {
   let bestResult = null;
   let bestScore = { placed: 0, maxX: Infinity, trucks: Infinity };
 
+  // --- Auto-select best heuristic based on configuration ---
+  // When heuristic is 'auto', quickly benchmark all 5 heuristics in a single
+  // pass and pick the one that places the most palettes with the shortest floor.
+  const _pickBestHeuristic = () => {
+    let bestH = 'BestAreaFit';
+    let bestS = { placed: 0, maxX: Infinity, trucks: Infinity };
+    for (const h of HEURISTICS) {
+      const r = _packMultiTruck(expandedPalettes, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
+      const s = { placed: r.totalPlaced, maxX: r.trucks.reduce((mx, t) => Math.max(mx, t.maxX), 0), trucks: r.trucks.length };
+      if (s.placed > bestS.placed ||
+          (s.placed === bestS.placed && s.trucks < bestS.trucks) ||
+          (s.placed === bestS.placed && s.trucks === bestS.trucks && s.maxX < bestS.maxX)) {
+        bestH = h;
+        bestS = s;
+      }
+    }
+    return bestH;
+  };
+
   if (mode === 'preview') {
-    // --- PREVIEW MODE: 1 single pass, no shuffle, selected heuristic ---
-    const h = heuristic === 'auto' ? 'BestAreaFit' : heuristic;
+    // --- PREVIEW MODE: 1 single pass, auto picks best heuristic ---
+    const h = heuristic === 'auto' ? _pickBestHeuristic() : heuristic;
     bestResult = _packMultiTruck(expandedPalettes, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
     bestResult.heuristic = h;
     bestResult.mode = 'preview';
@@ -136,7 +155,7 @@ function solve(params) {
 
   } else if (mode === 'simulation' && iterations > 0) {
     // --- SIMULATION MODE: random shuffle iterations (like original brute force) ---
-    const h = heuristic === 'auto' ? 'BestAreaFit' : heuristic;
+    const h = heuristic === 'auto' ? _pickBestHeuristic() : heuristic;
 
     for (let iter = 0; iter < iterations; iter++) {
       const shuffled = [...expandedPalettes];

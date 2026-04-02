@@ -1,6 +1,8 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useContext } from 'react';
+import { AppContext } from '../App';
 
 export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
+  const { marker } = useContext(AppContext);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [dragging, setDragging] = useState(null);
@@ -59,15 +61,20 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
       ctx.stroke();
     }
 
-    // 8m marker (like original red line at x=800)
-    ctx.strokeStyle = '#dc262660';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(ox + 800 * scale, oy);
-    ctx.lineTo(ox + 800 * scale, oy + binH * scale);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // Marker line (configurable via preferences, e.g. 800cm = smaller truck reference)
+    if (marker > 0 && marker < binW) {
+      ctx.strokeStyle = '#dc262660';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(ox + marker * scale, oy);
+      ctx.lineTo(ox + marker * scale, oy + binH * scale);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#dc262690';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(`${(marker / 100).toFixed(1)}m`, ox + marker * scale + 3, oy - 4);
+    }
 
     // Axis labels
     ctx.fillStyle = '#64748b';
@@ -133,7 +140,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
       ctx.fillText(`${truckData.floorMeters.toFixed(2)}m`, mx + 4, oy + 14);
     }
 
-  }, [placements, scale, offset, hovered, truck, truckData, binW, binH]);
+  }, [placements, scale, offset, hovered, truck, truckData, binW, binH, marker]);
 
   // Mouse interactions for drag & drop
   const getCanvasPos = useCallback((e) => {
