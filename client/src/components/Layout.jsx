@@ -1,9 +1,10 @@
 import React, { useContext } from 'react';
-import { Truck, FolderOpen, SlidersHorizontal, Settings, User, LogOut } from 'lucide-react';
+import { Truck, FolderOpen, SlidersHorizontal, Settings, User, LogOut, Save, Check } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function Layout({ children }) {
-  const { user, handleLogout, setShowPrefs, setShowProjects, setShowPaletteConfig } = useContext(AppContext);
+  const { user, handleLogout, setShowPrefs, setShowProjects, setShowPaletteConfig,
+    currentProjectName, currentProjectId, handleQuickSave, saveFlash } = useContext(AppContext);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -16,6 +17,24 @@ export default function Layout({ children }) {
               <h1 className="text-xl font-bold tracking-tight">Easy Packing</h1>
               <p className="text-blue-200 text-xs">Optimisation chargement camions</p>
             </div>
+            {/* Current project indicator */}
+            {user && currentProjectName && (
+              <div className="ml-4 flex items-center gap-2 bg-blue-900/50 rounded-lg px-3 py-1.5">
+                <span className="text-sm text-blue-100 font-medium truncate max-w-[200px]">{currentProjectName}</span>
+                <button
+                  onClick={handleQuickSave}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all ${
+                    saveFlash
+                      ? 'bg-green-500 text-white'
+                      : 'bg-blue-500/50 hover:bg-blue-400/60 text-white'
+                  }`}
+                  title="Sauvegarder le projet"
+                >
+                  {saveFlash ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                  {saveFlash ? 'Sauvé' : 'Sauver'}
+                </button>
+              </div>
+            )}
           </div>
 
           {user && (

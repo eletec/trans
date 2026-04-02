@@ -9,7 +9,7 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
-import { Eye, Truck, RotateCcw, Trash2 } from 'lucide-react';
+import { Eye, Truck, RotateCcw, Trash2, Save } from 'lucide-react';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -56,6 +56,7 @@ export default function App() {
   const [showPaletteConfig, setShowPaletteConfig] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectName, setCurrentProjectName] = useState('');
+  const [saveFlash, setSaveFlash] = useState(false);
   const [activeTruckIndex, setActiveTruckIndex] = useState(0);
   const [error, setError] = useState('');
   const [language, setLanguage] = useState('fr');
@@ -179,6 +180,26 @@ export default function App() {
     setShowProjects(false);
   };
 
+  const handleQuickSave = async () => {
+    if (!currentProjectId) { setShowProjects(true); return; }
+    try {
+      await api.updateProject(currentProjectId, {
+        truck_config: truck,
+        palette_data: palettes,
+        result_data: result,
+        heuristic,
+        settings: {
+          allowRotation, groupContiguous, maxTrucks,
+          calcMode, iterations, marker, paletteTemplates
+        }
+      });
+      setSaveFlash(true);
+      setTimeout(() => setSaveFlash(false), 1500);
+    } catch (e) {
+      setError('Erreur sauvegarde: ' + e.message);
+    }
+  };
+
   const ctx = {
     user, setUser, palettes, setPalettes, truck, setTruck,
     result, setResult, loading, viewMode, setViewMode,
@@ -188,11 +209,12 @@ export default function App() {
     activeTruckIndex, setActiveTruckIndex, error, setError,
     language, setLanguage, marker, setMarker,
     addPalette, updatePalette, removePalette,
-    handleCalculate, handleDragPalette, handleLoadProject,
+    handleCalculate, handleDragPalette, handleLoadProject, handleQuickSave,
     handleLogout, showPrefs, setShowPrefs, showProjects, setShowProjects,
     showPaletteConfig, setShowPaletteConfig,
     paletteTemplates, setPaletteTemplates,
     currentProjectId, setCurrentProjectId, currentProjectName, setCurrentProjectName,
+    saveFlash,
     PALETTE_COLORS, TRUCK_PRESETS
   };
 
@@ -242,6 +264,19 @@ export default function App() {
                   title="Vider le cache et recalculer"
                 >
                   <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleQuickSave}
+                  className={`py-3 px-3 rounded-lg transition-all ${
+                    saveFlash
+                      ? 'bg-green-500 text-white'
+                      : currentProjectId
+                        ? 'bg-green-100 hover:bg-green-200 text-green-700'
+                        : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                  }`}
+                  title={currentProjectId ? `Sauvegarder "${currentProjectName}"` : 'Enregistrer comme nouveau projet'}
+                >
+                  <Save className="w-4 h-4" />
                 </button>
               </div>
               {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
