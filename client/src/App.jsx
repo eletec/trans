@@ -54,6 +54,8 @@ export default function App() {
   const [showPrefs, setShowPrefs] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [showPaletteConfig, setShowPaletteConfig] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [currentProjectName, setCurrentProjectName] = useState('');
   const [activeTruckIndex, setActiveTruckIndex] = useState(0);
   const [error, setError] = useState('');
   const [language, setLanguage] = useState('fr');
@@ -150,6 +152,8 @@ export default function App() {
       if (s.marker !== undefined) setMarker(s.marker);
       if (s.paletteTemplates) setPaletteTemplates(s.paletteTemplates);
     }
+    setCurrentProjectId(project.id);
+    setCurrentProjectName(project.name);
     setShowProjects(false);
   };
 
@@ -166,6 +170,7 @@ export default function App() {
     handleLogout, showPrefs, setShowPrefs, showProjects, setShowProjects,
     showPaletteConfig, setShowPaletteConfig,
     paletteTemplates, setPaletteTemplates,
+    currentProjectId, setCurrentProjectId, currentProjectName, setCurrentProjectName,
     PALETTE_COLORS, TRUCK_PRESETS
   };
 
