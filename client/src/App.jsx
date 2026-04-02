@@ -160,34 +160,18 @@ export default function App() {
     });
   };
 
-  const handleDropPalette = (truckIdx, palIdx, newX, newY, startX, startY, hasCollision) => {
+  const handleDropPalette = (truckIdx, palIdx, newX, newY) => {
     if (!result) return;
-    if (hasCollision) {
-      // Collision detected — snap back to original position
-      setResult(prev => {
-        const next = { ...prev, trucks: [...prev.trucks] };
-        next.trucks[truckIdx] = {
-          ...next.trucks[truckIdx],
-          placements: next.trucks[truckIdx].placements.map((p, i) =>
-            i === palIdx ? { ...p, x: Math.round(startX), y: Math.round(startY) } : p
-          )
-        };
-        return next;
-      });
-      setError('Chevauchement détecté — palette remise en place. Utilisez Ctrl+glisser pour forcer et recalculer.');
-      setTimeout(() => setError(''), 3000);
-    } else {
-      // No collision — recalculate maxX (floor meters) from current positions
-      setResult(prev => {
-        const next = { ...prev, trucks: [...prev.trucks] };
-        const t = { ...next.trucks[truckIdx] };
-        const maxX = t.placements.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
-        t.maxX = maxX;
-        t.floorMeters = maxX / 100;
-        next.trucks[truckIdx] = t;
-        return next;
-      });
-    }
+    // Recalculate maxX (floor meters) from current positions
+    setResult(prev => {
+      const next = { ...prev, trucks: [...prev.trucks] };
+      const t = { ...next.trucks[truckIdx] };
+      const maxX = t.placements.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
+      t.maxX = maxX;
+      t.floorMeters = maxX / 100;
+      next.trucks[truckIdx] = t;
+      return next;
+    });
   };
 
   const handleLoadProject = (project) => {
