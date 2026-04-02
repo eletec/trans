@@ -20,7 +20,8 @@ function _overlaps(a, b) {
          a.y < b.y + b.ph && a.y + a.ph > b.y;
 }
 
-function resolveCollisions(placements, fixedIdx, binW, binH) {
+function resolveCollisions(placements, fixedIndices, binW, binH) {
+  const fixedSet = new Set(Array.isArray(fixedIndices) ? fixedIndices : [fixedIndices]);
   const items = placements.map(p => ({
     ...p,
     pw: p.placedWidth,
@@ -30,9 +31,8 @@ function resolveCollisions(placements, fixedIdx, binW, binH) {
   for (let iter = 0; iter < 30; iter++) {
     let dirty = false;
     for (let i = 0; i < items.length; i++) {
-      if (i === fixedIdx) continue;
+      if (fixedSet.has(i)) continue;
       const a = items[i];
-      // Find first collision
       let collider = null;
       for (let j = 0; j < items.length; j++) {
         if (j === i) continue;
@@ -41,7 +41,6 @@ function resolveCollisions(placements, fixedIdx, binW, binH) {
       if (!collider) continue;
       dirty = true;
 
-      // Build candidates from edges of every other palette and bin edges
       const cands = [{ x: 0, y: 0 }];
       for (let j = 0; j < items.length; j++) {
         if (j === i) continue;
@@ -236,14 +235,17 @@ export default function App() {
     }
   };
 
-  const handleDragPalette = (truckIdx, palIdx, newX, newY) => {
+  // moves: [{palIdx, x, y}, ...]
+  const handleDragPalettes = (truckIdx, moves) => {
     if (!result) return;
     setResult(prev => {
       const next = { ...prev, trucks: [...prev.trucks] };
       const trk = { ...next.trucks[truckIdx] };
-      trk.placements = trk.placements.map((p, i) =>
-        i === palIdx ? { ...p, x: Math.round(newX), y: Math.round(newY) } : p
-      );
+      const newPlacements = [...trk.placements];
+      for (const m of moves) {
+        newPlacements[m.palIdx] = { ...newPlacements[m.palIdx], x: Math.round(m.x), y: Math.round(m.y) };
+      }
+      trk.placements = newPlacements;
       const maxX = trk.placements.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
       trk.maxX = maxX;
       trk.floorMeters = maxX / 100;
@@ -252,13 +254,13 @@ export default function App() {
     });
   };
 
-  const handleDropPalette = (truckIdx, palIdx, newX, newY) => {
+  // fixedIndices: array of palette indices that were dragged (they stay put)
+  const handleDropPalettes = (truckIdx, fixedIndices) => {
     if (!result) return;
     setResult(prev => {
       const next = { ...prev, trucks: [...prev.trucks] };
       const t = { ...next.trucks[truckIdx] };
-      // Resolve collisions: dragged palette stays fixed, others move to nearest free spot
-      t.placements = resolveCollisions(t.placements, palIdx, truck.length_cm, truck.width_cm);
+      t.placements = resolveCollisions(t.placements, fixedIndices, truck.length_cm, truck.width_cm);
       const maxX = t.placements.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
       t.maxX = maxX;
       t.floorMeters = maxX / 100;
@@ -432,7 +434,7 @@ ${truckSections}
     activeTruckIndex, setActiveTruckIndex, error, setError,
     language, setLanguage, marker, setMarker,
     addPalette, updatePalette, removePalette,
-    handleCalculate, handleDragPalette, handleLoadProject, handleQuickSave,
+    handleCalculate, handleDragPalettes, handleLoadProject, handleQuickSave,
     handleLogout, showPrefs, setShowPrefs, showProjects, setShowProjects,
     showPaletteConfig, setShowPaletteConfig,
     paletteTemplates, setPaletteTemplates,
@@ -569,8 +571,8 @@ ${truckSections}
                           truck={truck}
                           result={result}
                           truckIndex={tIdx}
-                          onDragPalette={handleDragPalette}
-                          onDropPalette={handleDropPalette}
+                          onDragPalettes={handleDragPalettes}
+                          onDropPalettes={handleDropPalettes}
                         />
                       ) : (
                         <View3D

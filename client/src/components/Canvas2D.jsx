@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback, useContext } from 'react';
 import { AppContext } from '../App';
 
-export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onDropPalette }) {
+export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, onDropPalettes }) {
   const { marker } = useContext(AppContext);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null);
+  const [dragging, setDragging] = useState(null); // { indices, offsets[], startPositions[] }
+  const [selected, setSelected] = useState(new Set());
   const [hovered, setHovered] = useState(null);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 40, y: 40 });
@@ -96,17 +97,30 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
       const py = oy + p.y * scale;
       const pw = p.placedWidth * scale;
       const ph = p.placedHeight * scale;
+      const isSel = selected.has(i);
 
       // Fill
       ctx.fillStyle = p.color || '#94a3b8';
-      ctx.globalAlpha = i === hovered ? 1 : 0.85;
+      ctx.globalAlpha = i === hovered || isSel ? 1 : 0.85;
       ctx.fillRect(px, py, pw, ph);
 
-      // Border
+      // Border — selected = blue dashed, hovered = blue solid
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = i === hovered ? '#1e40af' : '#334155';
-      ctx.lineWidth = i === hovered ? 2 : 1;
+      if (isSel) {
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([4, 3]);
+      } else if (i === hovered) {
+        ctx.strokeStyle = '#1e40af';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+      }
       ctx.strokeRect(px, py, pw, ph);
+      ctx.setLineDash([]);
 
       // Text
       if (pw > 30 && ph > 15) {
@@ -146,7 +160,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
       ctx.fillText(`${truckData.floorMeters.toFixed(2)}m`, mx + 4, oy + 14);
     }
 
-  }, [placements, scale, offset, hovered, truck, truckData, binW, binH, marker]);
+  }, [placements, scale, offset, hovered, selected, truck, truckData, binW, binH, marker]);
 
   // Mouse interactions for drag & drop
   const getCanvasPos = useCallback((e) => {
@@ -168,28 +182,89 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
     return -1;
   }, [placements]);
 
+  // Helper: dimension key for grouping same-sized palettes
+  const dimKey = useCallback((p) => {
+    const l = Math.max(p.placedWidth, p.placedHeight);
+    const w = Math.min(p.placedWidth, p.placedHeight);
+    return `${l}x${w}`;
+  }, []);
+
   const handleMouseDown = (e) => {
     const pos = getCanvasPos(e);
     const idx = findPaletteAt(pos.x, pos.y);
-    if (idx >= 0) {
-      const p = placements[idx];
-      setDragging({
-        idx,
-        offsetX: pos.x - p.x,
-        offsetY: pos.y - p.y,
-        startX: p.x,
-        startY: p.y
-      });
-      e.preventDefault();
+    if (idx < 0) {
+      // Click on empty area → clear selection
+      setSelected(new Set());
+      return;
     }
+
+    const p = placements[idx];
+
+    if (e.detail === 2) {
+      // Double-click → select all same-sized palettes
+      const key = dimKey(p);
+      const sameGroup = new Set();
+      placements.forEach((pp, i) => { if (dimKey(pp) === key) sameGroup.add(i); });
+      setSelected(sameGroup);
+      e.preventDefault();
+      return;
+    }
+
+    // Build the set of indices to drag
+    let dragSet;
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl+click toggles individual palette in selection
+      const next = new Set(selected);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      setSelected(next);
+      dragSet = next;
+    } else if (selected.has(idx)) {
+      // Click on already-selected palette → drag the whole selection
+      dragSet = selected;
+    } else {
+      // Click without ctrl → select only this one
+      const next = new Set([idx]);
+      setSelected(next);
+      dragSet = next;
+    }
+
+    // Build drag state for all selected palettes
+    const indices = Array.from(dragSet);
+    const offsets = indices.map(i => ({
+      dx: pos.x - placements[i].x,
+      dy: pos.y - placements[i].y
+    }));
+    const startPositions = indices.map(i => ({
+      x: placements[i].x,
+      y: placements[i].y
+    }));
+
+    setDragging({ indices, offsets, startPositions, anchorIdx: idx });
+    e.preventDefault();
   };
 
   const handleMouseMove = (e) => {
     const pos = getCanvasPos(e);
     if (dragging) {
-      const newX = Math.max(0, Math.min(binW - placements[dragging.idx].placedWidth, pos.x - dragging.offsetX));
-      const newY = Math.max(0, Math.min(binH - placements[dragging.idx].placedHeight, pos.y - dragging.offsetY));
-      onDragPalette(truckIndex, dragging.idx, newX, newY);
+      // Find anchor offset
+      const anchorI = dragging.indices.indexOf(dragging.anchorIdx);
+      const anchorOff = dragging.offsets[anchorI];
+      // Calculate base position for anchor
+      const baseX = pos.x - anchorOff.dx;
+      const baseY = pos.y - anchorOff.dy;
+      // Delta from anchor's start
+      const deltaX = baseX - dragging.startPositions[anchorI].x;
+      const deltaY = baseY - dragging.startPositions[anchorI].y;
+
+      // Move all selected palettes by the same delta
+      const moves = dragging.indices.map((palIdx, k) => {
+        const newX = Math.max(0, Math.min(binW - placements[palIdx].placedWidth,
+          dragging.startPositions[k].x + deltaX));
+        const newY = Math.max(0, Math.min(binH - placements[palIdx].placedHeight,
+          dragging.startPositions[k].y + deltaY));
+        return { palIdx, x: newX, y: newY };
+      });
+      onDragPalettes(truckIndex, moves);
     } else {
       const idx = findPaletteAt(pos.x, pos.y);
       setHovered(idx >= 0 ? idx : null);
@@ -198,10 +273,18 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
 
   const handleMouseUp = () => {
     if (dragging) {
-      const p = placements[dragging.idx];
-      const movedSignificantly = Math.abs(p.x - dragging.startX) > 2 || Math.abs(p.y - dragging.startY) > 2;
-      if (movedSignificantly && onDropPalette) {
-        onDropPalette(truckIndex, dragging.idx, p.x, p.y);
+      // Check if any palette actually moved
+      let movedSignificantly = false;
+      for (let k = 0; k < dragging.indices.length; k++) {
+        const p = placements[dragging.indices[k]];
+        if (Math.abs(p.x - dragging.startPositions[k].x) > 2 ||
+            Math.abs(p.y - dragging.startPositions[k].y) > 2) {
+          movedSignificantly = true;
+          break;
+        }
+      }
+      if (movedSignificantly && onDropPalettes) {
+        onDropPalettes(truckIndex, dragging.indices);
       }
       setDragging(null);
     }
