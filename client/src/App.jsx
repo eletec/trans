@@ -14,6 +14,69 @@ import { api } from './api/client';
 
 export const AppContext = createContext();
 
+// ── Collision resolution on drop ────────────────────────────────
+function _overlaps(a, b) {
+  return a.x < b.x + b.pw && a.x + a.pw > b.x &&
+         a.y < b.y + b.ph && a.y + a.ph > b.y;
+}
+
+function resolveCollisions(placements, fixedIdx, binW, binH) {
+  const items = placements.map(p => ({
+    ...p,
+    pw: p.placedWidth,
+    ph: p.placedHeight,
+  }));
+
+  for (let iter = 0; iter < 30; iter++) {
+    let dirty = false;
+    for (let i = 0; i < items.length; i++) {
+      if (i === fixedIdx) continue;
+      const a = items[i];
+      // Find first collision
+      let collider = null;
+      for (let j = 0; j < items.length; j++) {
+        if (j === i) continue;
+        if (_overlaps(a, items[j])) { collider = items[j]; break; }
+      }
+      if (!collider) continue;
+      dirty = true;
+
+      // Build candidates from edges of every other palette and bin edges
+      const cands = [{ x: 0, y: 0 }];
+      for (let j = 0; j < items.length; j++) {
+        if (j === i) continue;
+        const o = items[j];
+        cands.push({ x: o.x + o.pw, y: a.y });
+        cands.push({ x: o.x + o.pw, y: o.y });
+        cands.push({ x: a.x, y: o.y + o.ph });
+        cands.push({ x: o.x, y: o.y + o.ph });
+        cands.push({ x: o.x - a.pw, y: o.y });
+        cands.push({ x: o.x, y: o.y - a.ph });
+      }
+
+      let bestX = a.x, bestY = a.y, bestDist = Infinity;
+      for (const c of cands) {
+        const cx = Math.max(0, Math.min(binW - a.pw, Math.round(c.x)));
+        const cy = Math.max(0, Math.min(binH - a.ph, Math.round(c.y)));
+        const test = { x: cx, y: cy, pw: a.pw, ph: a.ph };
+        let free = true;
+        for (let j = 0; j < items.length; j++) {
+          if (j === i) continue;
+          if (_overlaps(test, items[j])) { free = false; break; }
+        }
+        if (!free) continue;
+        const dist = Math.abs(cx - a.x) + Math.abs(cy - a.y);
+        if (dist < bestDist) { bestDist = dist; bestX = cx; bestY = cy; }
+      }
+      items[i] = { ...items[i], x: bestX, y: bestY };
+    }
+    if (!dirty) break;
+  }
+
+  return placements.map((p, i) => ({ ...p, x: items[i].x, y: items[i].y }));
+}
+// ─────────────────────────────────────────────────────────────────
+
 const DEFAULT_TRUCK = {
   length_cm: 1360,
   width_cm: 245,
@@ -191,10 +254,11 @@ export default function App() {
 
   const handleDropPalette = (truckIdx, palIdx, newX, newY) => {
     if (!result) return;
-    // Recalculate maxX (floor meters) from current positions
     setResult(prev => {
       const next = { ...prev, trucks: [...prev.trucks] };
       const t = { ...next.trucks[truckIdx] };
+      // Resolve collisions: dragged palette stays fixed, others move to nearest free spot
+      t.placements = resolveCollisions(t.placements, palIdx, truck.length_cm, truck.width_cm);
       const maxX = t.placements.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
       t.maxX = maxX;
       t.floorMeters = maxX / 100;
