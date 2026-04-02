@@ -4,7 +4,9 @@ import { AppContext } from '../App';
 import { api } from '../api/client';
 
 export default function ProjectManager() {
-  const { setShowProjects, palettes, truck, heuristic, result, handleLoadProject } = useContext(AppContext);
+  const { setShowProjects, palettes, truck, heuristic, result, handleLoadProject,
+    allowRotation, groupContiguous, maxTrucks, calcMode, iterations, marker,
+    paletteTemplates } = useContext(AppContext);
   const [projects, setProjects] = useState([]);
   const [newName, setNewName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,16 @@ export default function ProjectManager() {
         truck_config: truck,
         palette_data: palettes,
         result_data: result,
-        heuristic
+        heuristic,
+        settings: {
+          allowRotation,
+          groupContiguous,
+          maxTrucks,
+          calcMode,
+          iterations,
+          marker,
+          paletteTemplates
+        }
       });
       setNewName('');
       loadProjects();

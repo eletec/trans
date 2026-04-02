@@ -140,6 +140,16 @@ export default function App() {
     if (project.palette_data) setPalettes(project.palette_data);
     if (project.result_data) setResult(project.result_data);
     if (project.heuristic) setHeuristic(project.heuristic);
+    if (project.settings) {
+      const s = project.settings;
+      if (s.allowRotation !== undefined) setAllowRotation(s.allowRotation);
+      if (s.groupContiguous !== undefined) setGroupContiguous(s.groupContiguous);
+      if (s.maxTrucks !== undefined) setMaxTrucks(s.maxTrucks);
+      if (s.calcMode) setCalcMode(s.calcMode);
+      if (s.iterations !== undefined) setIterations(s.iterations);
+      if (s.marker !== undefined) setMarker(s.marker);
+      if (s.paletteTemplates) setPaletteTemplates(s.paletteTemplates);
+    }
     setShowProjects(false);
   };
 

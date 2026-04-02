@@ -20,20 +20,23 @@ router.get('/:id', authMiddleware, (req, res) => {
   project.truck_config = project.truck_config ? JSON.parse(project.truck_config) : null;
   project.palette_data = project.palette_data ? JSON.parse(project.palette_data) : [];
   project.result_data = project.result_data ? JSON.parse(project.result_data) : null;
+  project.settings = project.settings ? JSON.parse(project.settings) : null;
   res.json({ project });
 });
 
 // POST /api/projects
 router.post('/', authMiddleware, (req, res) => {
-  const { name, truck_config, palette_data, heuristic } = req.body;
+  const { name, truck_config, palette_data, result_data, settings, heuristic } = req.body;
   if (!name) return res.status(400).json({ error: 'Champ name requis' });
   const result = db.prepare(
-    'INSERT INTO projects (name, user_id, truck_config, palette_data, heuristic) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO projects (name, user_id, truck_config, palette_data, result_data, settings, heuristic) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).run(
     name,
     req.user.id,
     truck_config ? JSON.stringify(truck_config) : null,
     palette_data ? JSON.stringify(palette_data) : '[]',
+    result_data ? JSON.stringify(result_data) : null,
+    settings ? JSON.stringify(settings) : null,
     heuristic || 'auto'
   );
   res.status(201).json({ id: result.lastInsertRowid });
@@ -44,16 +47,18 @@ router.put('/:id', authMiddleware, (req, res) => {
   const project = db.prepare('SELECT id FROM projects WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
   if (!project) return res.status(404).json({ error: 'Projet non trouvé' });
 
-  const { name, truck_config, palette_data, result_data, heuristic } = req.body;
+  const { name, truck_config, palette_data, result_data, settings, heuristic } = req.body;
   db.prepare(
     `UPDATE projects SET name = COALESCE(?, name), truck_config = COALESCE(?, truck_config),
      palette_data = COALESCE(?, palette_data), result_data = COALESCE(?, result_data),
+     settings = COALESCE(?, settings),
      heuristic = COALESCE(?, heuristic), updated_at = CURRENT_TIMESTAMP WHERE id = ?`
   ).run(
     name || null,
     truck_config ? JSON.stringify(truck_config) : null,
     palette_data ? JSON.stringify(palette_data) : null,
     result_data ? JSON.stringify(result_data) : null,
+    settings ? JSON.stringify(settings) : null,
     heuristic || null,
     req.params.id
   );

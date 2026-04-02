@@ -43,11 +43,19 @@ db.exec(`
     truck_config TEXT,
     palette_data TEXT,
     result_data TEXT,
+    settings TEXT,
     heuristic TEXT DEFAULT 'auto',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+// Migration: add settings column if missing (for existing databases)
+try {
+  db.prepare("SELECT settings FROM projects LIMIT 1").get();
+} catch (e) {
+  db.exec("ALTER TABLE projects ADD COLUMN settings TEXT");
+}
 
 // Insert default palette templates if none exist
 const count = db.prepare('SELECT COUNT(*) as c FROM palette_templates WHERE user_id IS NULL').get();
