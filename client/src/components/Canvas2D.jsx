@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useContext } from 'react';
 import { AppContext } from '../App';
 
-export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
+export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onDropPalette }) {
   const { marker } = useContext(AppContext);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -106,7 +106,8 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
       if (pw > 30 && ph > 15) {
         ctx.fillStyle = '#1e293b';
         ctx.font = 'bold 10px sans-serif';
-        const label = p.ref || `#${i + 1}`;
+        const numLabel = p.num ? ` N°${p.num}` : '';
+        const label = (p.ref || `#${i + 1}`) + numLabel;
         ctx.fillText(label, px + 3, py + 12);
 
         if (ph > 30) {
@@ -170,7 +171,9 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
       setDragging({
         idx,
         offsetX: pos.x - p.x,
-        offsetY: pos.y - p.y
+        offsetY: pos.y - p.y,
+        startX: p.x,
+        startY: p.y
       });
       e.preventDefault();
     }
@@ -188,8 +191,39 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette }) {
     }
   };
 
+  // Check if a palette at position overlaps with any other
+  const checkCollision = useCallback((idx, x, y, w, h) => {
+    for (let i = 0; i < placements.length; i++) {
+      if (i === idx) continue;
+      const p = placements[i];
+      if (x < p.x + p.placedWidth && x + w > p.x &&
+          y < p.y + p.placedHeight && y + h > p.y) {
+        return true;
+      }
+    }
+    return false;
+  }, [placements]);
+
   const handleMouseUp = () => {
-    setDragging(null);
+    if (dragging) {
+      const p = placements[dragging.idx];
+      const hasCollision = checkCollision(dragging.idx, p.x, p.y, p.placedWidth, p.placedHeight);
+      const movedSignificantly = Math.abs(p.x - dragging.startX) > 2 || Math.abs(p.y - dragging.startY) > 2;
+
+      if (hasCollision && movedSignificantly) {
+        // Collision: offer to snap back or recalculate
+        if (onDropPalette) {
+          onDropPalette(truckIndex, dragging.idx, p.x, p.y, dragging.startX, dragging.startY, true);
+        } else {
+          // Snap back
+          onDragPalette(truckIndex, dragging.idx, dragging.startX, dragging.startY);
+        }
+      } else if (!hasCollision && movedSignificantly && onDropPalette) {
+        // No collision: notify parent (update maxX if needed)
+        onDropPalette(truckIndex, dragging.idx, p.x, p.y, dragging.startX, dragging.startY, false);
+      }
+      setDragging(null);
+    }
   };
 
   return (

@@ -370,6 +370,8 @@ function _packMultiTruck(palettes, binWidth, binHeight, maxWeight, truckHeight, 
   let remaining = [...palettes];
   let totalPlaced = 0;
   let globalIndex = 0;
+  // Track per-ref numbering
+  const refCounters = {};
 
   while (remaining.length > 0 && trucks.length < maxTrucks) {
     const bin = new MaxRectsBinPack(binWidth, binHeight);
@@ -400,6 +402,11 @@ function _packMultiTruck(palettes, binWidth, binHeight, maxWeight, truckHeight, 
         const placedWidthMm = placed.width * 10;
         const placedHeightMm = placed.height * 10;
 
+        // Per-ref numbering
+        const refKey = palette.ref || '?';
+        refCounters[refKey] = (refCounters[refKey] || 0) + 1;
+        const num = refCounters[refKey];
+
         truckResult.placements.push({
           ...palette,
           x: placed.x,
@@ -410,6 +417,7 @@ function _packMultiTruck(palettes, binWidth, binHeight, maxWeight, truckHeight, 
           placedHeightMm,
           rotated: placed.width !== palette.length,
           globalIndex: globalIndex,
+          num: num,
           remainingPercent: (100 - bin.occupancy() * 100)
         });
         truckResult.totalWeight += palette.weight;

@@ -4,13 +4,13 @@ import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
 
 function Palette3D({ placement }) {
-  const { x, y, placedWidth, placedHeight, color, ref, height } = placement;
+  const { x, y, placedWidth, placedHeight, color, ref, height, num } = placement;
   const h3d = (height || 1500) / 10 / 100; // mm -> m
   const px = (x + placedWidth / 2) / 100;
   const pz = (y + placedHeight / 2) / 100;
   const pw = placedWidth / 100;
   const pd = placedHeight / 100;
-  const label = ref || '?';
+  const label = (ref || '?') + (num != null ? ` N°${num}` : '');
 
   return (
     <group position={[px, h3d / 2, pz]}>
