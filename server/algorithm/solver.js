@@ -243,55 +243,73 @@ function solve(params) {
       (a.placed === b.placed && a.trucks < b.trucks) ||
       (a.placed === b.placed && a.trucks === b.trucks && a.maxX < b.maxX);
 
-    // Phase 1: deterministic sort strategies (unchanged, fast)
+    // Build groups of same-dimension palettes for group-level optimization.
+    // This ensures same-sized palettes are always placed consecutively,
+    // so the MAXRECTS algorithm naturally groups them together spatially.
     const heuristicsToRun = heuristic === 'auto' ? HEURISTICS : [heuristic];
+    let saGroups;
+    if (groupContiguous) {
+      const gMap = new Map();
+      for (const p of expandedPalettes) {
+        const l = Math.max(p.length, p.width);
+        const w = Math.min(p.length, p.width);
+        const key = `${l}x${w}`;
+        if (!gMap.has(key)) gMap.set(key, []);
+        gMap.get(key).push(p);
+      }
+      saGroups = Array.from(gMap.values());
+    } else {
+      saGroups = expandedPalettes.map(p => [p]);
+    }
+    const _flatten = (g) => g.flat();
+
+    // Phase 1: deterministic group sort strategies
     const sortStrategies = [
-      (a, b) => (b.length * b.width) - (a.length * a.width),
-      (a, b) => Math.max(b.length, b.width) - Math.max(a.length, a.width),
-      (a, b) => Math.min(b.length, b.width) - Math.min(a.length, a.width),
-      (a, b) => (b.length + b.width) - (a.length + a.width),
-      (a, b) => b.width - a.width || b.length - a.length,
-      (a, b) => b.length - a.length || b.width - a.width,
-      (a, b) => (a.length * a.width) - (b.length * b.width),
+      (a, b) => (b[0].length * b[0].width) - (a[0].length * a[0].width),
+      (a, b) => Math.max(b[0].length, b[0].width) - Math.max(a[0].length, a[0].width),
+      (a, b) => Math.min(b[0].length, b[0].width) - Math.min(a[0].length, a[0].width),
+      (a, b) => (b[0].length + b[0].width) - (a[0].length + a[0].width),
+      (a, b) => b[0].width - a[0].width || b[0].length - a[0].length,
+      (a, b) => b[0].length - a[0].length || b[0].width - a[0].width,
+      (a, b) => (a[0].length * a[0].width) - (b[0].length * b[0].width),
+      (a, b) => b.length - a.length,  // most items first
     ];
 
     let totalIterations = 0;
-    let bestPerm = [...expandedPalettes];
+    let bestGroupPerm = [...saGroups];
 
     for (const sortFn of sortStrategies) {
-      const sorted = [...expandedPalettes].sort(sortFn);
+      const sorted = [...saGroups].sort(sortFn);
       for (const h of heuristicsToRun) {
-        const e = _eval(sorted, h);
+        const e = _eval(_flatten(sorted), h);
         totalIterations++;
         if (_isBetter(e, bestScore)) {
           bestResult = e.result;
           bestResult.heuristic = h;
           bestScore = { placed: e.placed, maxX: e.maxX, trucks: e.trucks };
-          bestPerm = sorted;
+          bestGroupPerm = sorted;
         }
       }
     }
 
-    // Phase 2: Simulated Annealing — run on EACH heuristic independently
-    // with different seeds, then keep the overall best.
+    // Phase 2: Simulated Annealing — swap GROUPS to keep same-sized palettes together
     const SA_ITER = 100000;
-    const T_START = 200;     // initial temperature (in cm — accepts ±200cm moves initially)
+    const T_START = 200;
     const T_END = 0.01;
     const alpha = Math.pow(T_END / T_START, 1 / SA_ITER);
 
     for (let hIdx = 0; hIdx < heuristicsToRun.length; hIdx++) {
       const h = heuristicsToRun[hIdx];
-      const rand = _rng(42 + hIdx * 7919); // different seed per heuristic
+      const rand = _rng(42 + hIdx * 7919);
 
-      // Start from best known permutation
-      let current = [...bestPerm];
-      let currentE = _eval(current, h);
+      let current = [...bestGroupPerm];
+      let currentE = _eval(_flatten(current), h);
       let currentEnergy = _energy(currentE);
       let T = T_START;
 
       for (let iter = 0; iter < SA_ITER; iter++) {
-        // Neighbor: swap two random indices
         const n = current.length;
+        if (n < 2) break;
         const i = Math.floor(rand() * n);
         let j = Math.floor(rand() * (n - 1));
         if (j >= i) j++;
@@ -299,12 +317,11 @@ function solve(params) {
         const candidate = [...current];
         [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
 
-        const candE = _eval(candidate, h);
+        const candE = _eval(_flatten(candidate), h);
         const candEnergy = _energy(candE);
         totalIterations++;
 
         const delta = candEnergy - currentEnergy;
-        // Accept if better, or with probability exp(-delta/T) if worse
         if (delta <= 0 || rand() < Math.exp(-delta / T)) {
           current = candidate;
           currentE = candE;
@@ -314,7 +331,7 @@ function solve(params) {
             bestResult = candE.result;
             bestResult.heuristic = h;
             bestScore = { placed: candE.placed, maxX: candE.maxX, trucks: candE.trucks };
-            bestPerm = candidate;
+            bestGroupPerm = candidate;
           }
         }
 
@@ -322,27 +339,27 @@ function solve(params) {
       }
     }
 
-    // Phase 3: final hill-climb polish from the SA best
+    // Phase 3: final hill-climb polish (group-level swaps)
     const finalH = bestResult ? bestResult.heuristic : heuristicsToRun[0];
-    let currentPerm = [...bestPerm];
-    let currentEval = _eval(currentPerm, finalH);
+    let currentGP = [...bestGroupPerm];
+    let currentEval = _eval(_flatten(currentGP), finalH);
 
     for (let round = 0; round < 10; round++) {
       let improved = false;
-      const n = currentPerm.length;
+      const n = currentGP.length;
       for (let i = 0; i < n - 1; i++) {
         for (let j = i + 1; j < n; j++) {
-          const candidate = [...currentPerm];
+          const candidate = [...currentGP];
           [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
           totalIterations++;
-          const candE = _eval(candidate, finalH);
+          const candE = _eval(_flatten(candidate), finalH);
           if (_isBetter(candE, bestScore)) {
-            currentPerm = candidate;
+            currentGP = candidate;
             currentEval = candE;
             bestResult = candE.result;
             bestResult.heuristic = finalH;
             bestScore = { placed: candE.placed, maxX: candE.maxX, trucks: candE.trucks };
-            bestPerm = candidate;
+            bestGroupPerm = candidate;
             improved = true;
           }
         }
