@@ -120,5 +120,14 @@ export const api = {
 
   async clearCache() {
     return request('/calculate/cache', { method: 'DELETE' });
+  },
+
+  // User preferences
+  async getPreferences() {
+    return request('/auth/preferences');
+  },
+
+  async savePreferences(preferences) {
+    return request('/auth/preferences', { method: 'PUT', body: JSON.stringify({ preferences }) });
   }
 };

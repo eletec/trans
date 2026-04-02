@@ -62,7 +62,7 @@ export default function App() {
   const [marker, setMarker] = useState(800); // marker line in cm (e.g. 800 = 8m porteur reference)
 
   // Palette templates with color and label (like original "Configuration Palettes" dialog)
-  const [paletteTemplates, setPaletteTemplates] = useState([
+  const DEFAULT_PALETTE_TEMPLATES = [
     { name: '2500x1000', length: 2500, width: 1000, color: '#C0C0C0', label: 'PA2' },
     { name: '2100x1000', length: 2100, width: 1000, color: '#00FF00', label: 'Mobilier C' },
     { name: '1500x1000', length: 1500, width: 1000, color: '#0000FF', label: 'Mobilier B' },
@@ -71,7 +71,29 @@ export default function App() {
     { name: '1200x800',  length: 1200, width: 800,  color: '#FFFF00', label: 'PA 1' },
     { name: '1000x1200', length: 1000, width: 1200, color: '#FFA500', label: '' },
     { name: '600x800',   length: 600,  width: 800,  color: '#00CED1', label: '' },
-  ]);
+  ];
+  const [paletteTemplates, setPaletteTemplates] = useState(DEFAULT_PALETTE_TEMPLATES);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  // Load user preferences on login/mount
+  useEffect(() => {
+    if (!user) { setPrefsLoaded(false); return; }
+    (async () => {
+      try {
+        const data = await api.getPreferences();
+        const prefs = data.preferences || {};
+        if (prefs.paletteTemplates) setPaletteTemplates(prefs.paletteTemplates);
+        if (prefs.marker !== undefined) setMarker(prefs.marker);
+        if (prefs.allowRotation !== undefined) setAllowRotation(prefs.allowRotation);
+        if (prefs.groupContiguous !== undefined) setGroupContiguous(prefs.groupContiguous);
+        if (prefs.calcMode) setCalcMode(prefs.calcMode);
+      } catch (e) {
+        // Preferences not available yet, use defaults
+      } finally {
+        setPrefsLoaded(true);
+      }
+    })();
+  }, [user]);
 
   const handleLogin = (userData) => setUser(userData);
   const handleLogout = () => { api.logout(); setUser(null); };

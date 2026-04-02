@@ -49,9 +49,31 @@ router.post('/login', (req, res) => {
 // GET /api/auth/me
 const { authMiddleware } = require('../auth');
 router.get('/me', authMiddleware, (req, res) => {
-  const user = db.prepare('SELECT id, username, email, role, created_at FROM users WHERE id = ?').get(req.user.id);
+  const user = db.prepare('SELECT id, username, email, role, created_at, preferences FROM users WHERE id = ?').get(req.user.id);
   if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+  user.preferences = user.preferences ? JSON.parse(user.preferences) : null;
   res.json({ user });
+});
+
+// GET /api/auth/preferences
+router.get('/preferences', authMiddleware, (req, res) => {
+  const row = db.prepare('SELECT preferences FROM users WHERE id = ?').get(req.user.id);
+  const preferences = row && row.preferences ? JSON.parse(row.preferences) : {};
+  res.json({ preferences });
+});
+
+// PUT /api/auth/preferences
+router.put('/preferences', authMiddleware, (req, res) => {
+  const { preferences } = req.body;
+  if (!preferences || typeof preferences !== 'object') {
+    return res.status(400).json({ error: 'Champ preferences requis (objet)' });
+  }
+  // Merge with existing preferences
+  const row = db.prepare('SELECT preferences FROM users WHERE id = ?').get(req.user.id);
+  const existing = row && row.preferences ? JSON.parse(row.preferences) : {};
+  const merged = { ...existing, ...preferences };
+  db.prepare('UPDATE users SET preferences = ? WHERE id = ?').run(JSON.stringify(merged), req.user.id);
+  res.json({ preferences: merged });
 });
 
 module.exports = router;

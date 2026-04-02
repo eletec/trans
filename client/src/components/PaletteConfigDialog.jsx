@@ -1,11 +1,13 @@
 import React, { useContext, useState } from 'react';
 import { Ruler } from 'lucide-react';
 import { AppContext } from '../App';
+import { api } from '../api/client';
 
 /**
  * Configuration Palettes — equivalent to the original C++ palette_config form.
  * Allows defining reusable palette dimension presets (Longueur x Largeur in mm).
  * These presets populate the dropdown in the palette grid.
+ * Changes are saved to user preferences (per-user, persistent).
  */
 export default function PaletteConfigDialog() {
   const { setShowPaletteConfig, paletteTemplates, setPaletteTemplates } = useContext(AppContext);
@@ -40,6 +42,8 @@ export default function PaletteConfigDialog() {
         label: t.label || ''
       }));
     setPaletteTemplates(cleaned);
+    // Persist to user preferences
+    api.savePreferences({ paletteTemplates: cleaned }).catch(() => {});
     setShowPaletteConfig(false);
   };
 

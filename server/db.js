@@ -57,6 +57,13 @@ try {
   db.exec("ALTER TABLE projects ADD COLUMN settings TEXT");
 }
 
+// Migration: add preferences column to users table
+try {
+  db.prepare("SELECT preferences FROM users LIMIT 1").get();
+} catch (e) {
+  db.exec("ALTER TABLE users ADD COLUMN preferences TEXT");
+}
+
 // Insert default palette templates if none exist
 const count = db.prepare('SELECT COUNT(*) as c FROM palette_templates WHERE user_id IS NULL').get();
 if (count.c === 0) {
