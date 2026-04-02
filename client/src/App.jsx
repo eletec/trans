@@ -14,6 +14,57 @@ import { api } from './api/client';
 
 export const AppContext = createContext();
 
+// ── Client-side MAXRECTS repack (used during drag) ──────────────
+function _subtractRect(freeRects, px, py, pw, ph) {
+  const out = [];
+  for (const r of freeRects) {
+    if (px >= r.x + r.w || px + pw <= r.x || py >= r.y + r.h || py + ph <= r.y) {
+      out.push(r);
+      continue;
+    }
+    if (px > r.x)           out.push({ x: r.x, y: r.y, w: px - r.x, h: r.h });
+    if (px + pw < r.x + r.w) out.push({ x: px + pw, y: r.y, w: r.x + r.w - px - pw, h: r.h });
+    if (py > r.y)           out.push({ x: r.x, y: r.y, w: r.w, h: py - r.y });
+    if (py + ph < r.y + r.h) out.push({ x: r.x, y: py + ph, w: r.w, h: r.y + r.h - py - ph });
+  }
+  // Prune rects contained within another
+  return out.filter((a, i) =>
+    !out.some((b, j) => i !== j && a.x >= b.x && a.y >= b.y &&
+      a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h)
+  );
+}
+
+function clientRepack(placements, dragIdx, binW, binH) {
+  const dragged = placements[dragIdx];
+  const others = placements
+    .map((p, i) => ({ ...p, _oi: i }))
+    .filter((_, i) => i !== dragIdx);
+  // Sort by area descending for better packing
+  others.sort((a, b) => (b.placedWidth * b.placedHeight) - (a.placedWidth * a.placedHeight));
+
+  let free = [{ x: 0, y: 0, w: binW, h: binH }];
+  // Reserve dragged palette's space
+  free = _subtractRect(free, dragged.x, dragged.y, dragged.placedWidth, dragged.placedHeight);
+
+  const result = [...placements];
+  for (const p of others) {
+    let bx = -1, by = -1, bScore = Infinity;
+    for (const r of free) {
+      if (r.w >= p.placedWidth && r.h >= p.placedHeight) {
+        // Best-short-side then leftmost
+        const score = r.x * 10000 + Math.min(r.w - p.placedWidth, r.h - p.placedHeight);
+        if (score < bScore) { bScore = score; bx = r.x; by = r.y; }
+      }
+    }
+    if (bx >= 0) {
+      result[p._oi] = { ...result[p._oi], x: bx, y: by };
+      free = _subtractRect(free, bx, by, p.placedWidth, p.placedHeight);
+    }
+  }
+  return result;
+}
+// ─────────────────────────────────────────────────────────────────
+
 const DEFAULT_TRUCK = {
   length_cm: 1360,
   width_cm: 245,
@@ -177,12 +228,18 @@ export default function App() {
     if (!result) return;
     setResult(prev => {
       const next = { ...prev, trucks: [...prev.trucks] };
-      next.trucks[truckIdx] = {
-        ...next.trucks[truckIdx],
-        placements: next.trucks[truckIdx].placements.map((p, i) =>
-          i === palIdx ? { ...p, x: Math.round(newX), y: Math.round(newY) } : p
-        )
-      };
+      const trk = { ...next.trucks[truckIdx] };
+      // Move the dragged palette
+      const updated = trk.placements.map((p, i) =>
+        i === palIdx ? { ...p, x: Math.round(newX), y: Math.round(newY) } : p
+      );
+      // Repack others around the dragged palette
+      const repacked = clientRepack(updated, palIdx, prev.trucks[truckIdx].binW || truck.length_cm, truck.width_cm);
+      const maxX = repacked.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
+      trk.placements = repacked;
+      trk.maxX = maxX;
+      trk.floorMeters = maxX / 100;
+      next.trucks[truckIdx] = trk;
       return next;
     });
   };
