@@ -20,6 +20,20 @@ function _overlaps(a, b) {
          a.y < b.y + b.ph && a.y + a.ph > b.y;
 }
 
+function _isFree(test, items, skipIdx) {
+  for (let j = 0; j < items.length; j++) {
+    if (j === skipIdx) continue;
+    if (_overlaps(test, items[j])) return false;
+  }
+  return true;
+}
+
+function _dimKey(p) {
+  const l = Math.max(p.pw, p.ph);
+  const w = Math.min(p.pw, p.ph);
+  return `${l}x${w}`;
+}
+
 function resolveCollisions(placements, fixedIndices, binW, binH) {
   const fixedSet = new Set(Array.isArray(fixedIndices) ? fixedIndices : [fixedIndices]);
   const items = placements.map(p => ({
@@ -28,51 +42,176 @@ function resolveCollisions(placements, fixedIndices, binW, binH) {
     ph: p.placedHeight,
   }));
 
-  for (let iter = 0; iter < 30; iter++) {
-    let dirty = false;
-    for (let i = 0; i < items.length; i++) {
-      if (fixedSet.has(i)) continue;
-      const a = items[i];
-      let collider = null;
-      for (let j = 0; j < items.length; j++) {
-        if (j === i) continue;
-        if (_overlaps(a, items[j])) { collider = items[j]; break; }
+  // 1. Identify all displaced palettes (non-fixed that collide with anything)
+  const displaced = [];
+  for (let i = 0; i < items.length; i++) {
+    if (fixedSet.has(i)) continue;
+    for (let j = 0; j < items.length; j++) {
+      if (j === i) continue;
+      if (_overlaps(items[i], items[j])) {
+        displaced.push(i);
+        break;
       }
-      if (!collider) continue;
-      dirty = true;
-
-      const cands = [{ x: 0, y: 0 }];
-      for (let j = 0; j < items.length; j++) {
-        if (j === i) continue;
-        const o = items[j];
-        cands.push({ x: o.x + o.pw, y: a.y });
-        cands.push({ x: o.x + o.pw, y: o.y });
-        cands.push({ x: a.x, y: o.y + o.ph });
-        cands.push({ x: o.x, y: o.y + o.ph });
-        cands.push({ x: o.x - a.pw, y: o.y });
-        cands.push({ x: o.x, y: o.y - a.ph });
-      }
-
-      let bestX = a.x, bestY = a.y, bestDist = Infinity;
-      for (const c of cands) {
-        const cx = Math.max(0, Math.min(binW - a.pw, Math.round(c.x)));
-        const cy = Math.max(0, Math.min(binH - a.ph, Math.round(c.y)));
-        const test = { x: cx, y: cy, pw: a.pw, ph: a.ph };
-        let free = true;
-        for (let j = 0; j < items.length; j++) {
-          if (j === i) continue;
-          if (_overlaps(test, items[j])) { free = false; break; }
-        }
-        if (!free) continue;
-        const dist = Math.abs(cx - a.x) + Math.abs(cy - a.y);
-        if (dist < bestDist) { bestDist = dist; bestX = cx; bestY = cy; }
-      }
-      items[i] = { ...items[i], x: bestX, y: bestY };
     }
-    if (!dirty) break;
   }
 
-  return placements.map((p, i) => ({ ...p, x: items[i].x, y: items[i].y }));
+  if (displaced.length === 0) return placements;
+
+  // 2. Temporarily remove displaced palettes (set to off-screen)
+  const savedPositions = displaced.map(i => ({ x: items[i].x, y: items[i].y }));
+  for (const i of displaced) {
+    items[i] = { ...items[i], x: -9999, y: -9999 };
+  }
+
+  // 3. Group displaced palettes by dimension, keeping same sizes together
+  const groups = new Map();
+  for (const i of displaced) {
+    const key = _dimKey(items[i]);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(i);
+  }
+
+  // Sort groups by area descending (place larger palettes first)
+  const sortedGroups = Array.from(groups.values()).sort((a, b) => {
+    const areaA = items[a[0]].pw * items[a[0]].ph;
+    const areaB = items[b[0]].pw * items[b[0]].ph;
+    return areaB - areaA;
+  });
+
+  // 4. For each group, find best contiguous block placement
+  for (const group of sortedGroups) {
+    const pw = items[group[0]].pw;
+    const ph = items[group[0]].ph;
+    const count = group.length;
+
+    // Build candidate positions from edges of all placed palettes + bin edges
+    const anchors = [{ x: 0, y: 0 }];
+    for (let j = 0; j < items.length; j++) {
+      if (items[j].x < -999) continue; // skip removed
+      const o = items[j];
+      anchors.push({ x: o.x + o.pw, y: 0 });
+      anchors.push({ x: o.x + o.pw, y: o.y });
+      anchors.push({ x: 0, y: o.y + o.ph });
+      anchors.push({ x: o.x, y: o.y + o.ph });
+      anchors.push({ x: o.x + o.pw, y: o.y + o.ph });
+    }
+
+    // For each anchor, try to fit a block of `count` palettes in grid arrangements
+    let bestPlacement = null;
+    let bestDist = Infinity;
+    // Average original position of this group (for preferring nearby placements)
+    const origIdxInDisp = group.map(i => displaced.indexOf(i));
+    const avgOrigX = origIdxInDisp.reduce((s, di) => s + savedPositions[di].x, 0) / count;
+    const avgOrigY = origIdxInDisp.reduce((s, di) => s + savedPositions[di].y, 0) / count;
+
+    // Try grid arrangements: rows × cols
+    const arrangements = [];
+    for (const [cellW, cellH] of [[pw, ph], [ph, pw]]) {
+      const maxCols = Math.floor(binW / cellW);
+      const maxRows = Math.floor(binH / cellH);
+      for (let cols = Math.min(maxCols, count); cols >= 1; cols--) {
+        const rows = Math.ceil(count / cols);
+        if (rows <= maxRows) {
+          arrangements.push({ cellW, cellH, cols, rows });
+        }
+      }
+    }
+
+    for (const arr of arrangements) {
+      for (const anchor of anchors) {
+        const ax = Math.max(0, Math.round(anchor.x));
+        const ay = Math.max(0, Math.round(anchor.y));
+
+        // Check if entire block fits within bin
+        if (ax + arr.cols * arr.cellW > binW) continue;
+        if (ay + arr.rows * arr.cellH > binH) continue;
+
+        // Check each cell is free
+        const positions = [];
+        let allFree = true;
+        for (let r = 0; r < arr.rows && positions.length < count; r++) {
+          for (let c = 0; c < arr.cols && positions.length < count; c++) {
+            const cx = ax + c * arr.cellW;
+            const cy = ay + r * arr.cellH;
+            const test = { x: cx, y: cy, pw: arr.cellW, ph: arr.cellH };
+            // Check against all non-displaced items
+            let free = true;
+            for (let j = 0; j < items.length; j++) {
+              if (items[j].x < -999) continue;
+              if (_overlaps(test, items[j])) { free = false; break; }
+            }
+            if (!free) { allFree = false; break; }
+            positions.push({ x: cx, y: cy, cellW: arr.cellW, cellH: arr.cellH });
+          }
+          if (!allFree) break;
+        }
+
+        if (!allFree || positions.length < count) continue;
+
+        // Distance from original position
+        const blockCenterX = positions.reduce((s, p) => s + p.x, 0) / count;
+        const blockCenterY = positions.reduce((s, p) => s + p.y, 0) / count;
+        const dist = Math.abs(blockCenterX - avgOrigX) + Math.abs(blockCenterY - avgOrigY);
+
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestPlacement = positions;
+        }
+      }
+    }
+
+    if (bestPlacement) {
+      // Place the group in the found block
+      for (let k = 0; k < group.length; k++) {
+        const i = group[k];
+        items[i] = {
+          ...items[i],
+          x: bestPlacement[k].x,
+          y: bestPlacement[k].y,
+          pw: bestPlacement[k].cellW,
+          ph: bestPlacement[k].cellH,
+        };
+      }
+    } else {
+      // Fallback: place individually at nearest free position
+      for (const i of group) {
+        const a = items[i];
+        const diIdx = displaced.indexOf(i);
+        items[i] = { ...items[i], x: savedPositions[diIdx].x, y: savedPositions[diIdx].y };
+
+        const cands = [{ x: 0, y: 0 }];
+        for (let j = 0; j < items.length; j++) {
+          if (j === i || items[j].x < -999) continue;
+          const o = items[j];
+          cands.push({ x: o.x + o.pw, y: a.y });
+          cands.push({ x: o.x + o.pw, y: o.y });
+          cands.push({ x: a.x, y: o.y + o.ph });
+          cands.push({ x: o.x, y: o.y + o.ph });
+        }
+
+        let bestX = 0, bestY = 0, bd = Infinity;
+        for (const c of cands) {
+          const cx = Math.max(0, Math.min(binW - a.pw, Math.round(c.x)));
+          const cy = Math.max(0, Math.min(binH - a.ph, Math.round(c.y)));
+          const test = { x: cx, y: cy, pw: a.pw, ph: a.ph };
+          if (!_isFree(test, items, i)) continue;
+          const dist = Math.abs(cx - savedPositions[diIdx].x) + Math.abs(cy - savedPositions[diIdx].y);
+          if (dist < bd) { bd = dist; bestX = cx; bestY = cy; }
+        }
+        items[i] = { ...items[i], x: bestX, y: bestY };
+      }
+    }
+  }
+
+  // Update placedWidth/placedHeight if rotation changed
+  return placements.map((p, i) => ({
+    ...p,
+    x: items[i].x,
+    y: items[i].y,
+    placedWidth: items[i].pw,
+    placedHeight: items[i].ph,
+    rotated: items[i].pw !== p.placedWidth ? !p.rotated : p.rotated,
+  }));
 }
 // ─────────────────────────────────────────────────────────────────
 
