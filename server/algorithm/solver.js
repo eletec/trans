@@ -157,11 +157,37 @@ function solve(params) {
     // --- SIMULATION MODE: random shuffle iterations (like original brute force) ---
     const h = heuristic === 'auto' ? _pickBestHeuristic() : heuristic;
 
+    // Build groups for group-level shuffling (contiguous placement)
+    let groups = null;
+    if (groupContiguous) {
+      const gMap = new Map();
+      for (const p of expandedPalettes) {
+        const l = Math.max(p.length, p.width);
+        const w = Math.min(p.length, p.width);
+        const key = `${l}x${w}`;
+        if (!gMap.has(key)) gMap.set(key, []);
+        gMap.get(key).push(p);
+      }
+      groups = Array.from(gMap.values());
+    }
+
     for (let iter = 0; iter < iterations; iter++) {
-      const shuffled = [...expandedPalettes];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      let shuffled;
+      if (groupContiguous && groups) {
+        // Shuffle groups order, keep palettes within each group together
+        const shuffledGroups = [...groups];
+        for (let i = shuffledGroups.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledGroups[i], shuffledGroups[j]] = [shuffledGroups[j], shuffledGroups[i]];
+        }
+        shuffled = shuffledGroups.flat();
+      } else {
+        // Shuffle individual palettes
+        shuffled = [...expandedPalettes];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
       }
 
       const result = _packMultiTruck(shuffled, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
