@@ -26,6 +26,13 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
   const data = await res.json();
+  if (res.status === 401) {
+    // Token expired — auto-logout
+    setToken(null);
+    setUser(null);
+    window.location.reload();
+    throw new Error('Session expirée — veuillez vous reconnecter');
+  }
   if (!res.ok) throw new Error(data.error || 'Erreur serveur');
   return data;
 }
