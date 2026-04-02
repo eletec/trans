@@ -212,16 +212,76 @@ function solve(params) {
     bestResult.iterations = iterations;
 
   } else {
-    // --- CALCULATE MODE: deterministic multi-heuristic (default) ---
+    // --- CALCULATE MODE: hybrid deterministic + simulation ---
+    // Phase 1: try all heuristics × multiple sort strategies (deterministic)
     const heuristicsToRun = heuristic === 'auto' ? HEURISTICS : [heuristic];
+    const sortStrategies = [
+      { name: 'area-desc', fn: (a, b) => (b.length * b.width) - (a.length * a.width) },
+      { name: 'maxdim-desc', fn: (a, b) => Math.max(b.length, b.width) - Math.max(a.length, a.width) },
+      { name: 'mindim-desc', fn: (a, b) => Math.min(b.length, b.width) - Math.min(a.length, a.width) },
+      { name: 'perim-desc', fn: (a, b) => (b.length + b.width) - (a.length + a.width) },
+      { name: 'width-desc', fn: (a, b) => b.width - a.width || b.length - a.length },
+      { name: 'length-desc', fn: (a, b) => b.length - a.length || b.width - a.width },
+      { name: 'area-asc', fn: (a, b) => (a.length * a.width) - (b.length * b.width) },
+    ];
 
-    for (const h of heuristicsToRun) {
-      const result = _packMultiTruck(expandedPalettes, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
+    let totalIterations = 0;
+    for (const strategy of sortStrategies) {
+      const sorted = [...expandedPalettes].sort(strategy.fn);
+      // Regroup if needed
+      let ordered = sorted;
+      if (groupContiguous) {
+        const gMap = new Map();
+        for (const p of sorted) {
+          const l = Math.max(p.length, p.width);
+          const w = Math.min(p.length, p.width);
+          const key = `${l}x${w}`;
+          if (!gMap.has(key)) gMap.set(key, []);
+          gMap.get(key).push(p);
+        }
+        ordered = Array.from(gMap.values()).flat();
+      }
+
+      for (const h of heuristicsToRun) {
+        const result = _packMultiTruck(ordered, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
+        const score = {
+          placed: result.totalPlaced,
+          maxX: result.trucks.reduce((mx, t) => Math.max(mx, t.maxX), 0),
+          trucks: result.trucks.length
+        };
+        totalIterations++;
+
+        const isBetter =
+          score.placed > bestScore.placed ||
+          (score.placed === bestScore.placed && score.trucks < bestScore.trucks) ||
+          (score.placed === bestScore.placed && score.trucks === bestScore.trucks && score.maxX < bestScore.maxX);
+
+        if (isBetter) {
+          bestResult = result;
+          bestResult.heuristic = h;
+          bestScore = score;
+        }
+      }
+    }
+
+    // Phase 2: brute-force simulation like C++ (individual palette shuffling)
+    const simH = bestResult ? bestResult.heuristic : 'BestShortSideFit';
+    const SIM_ITER = 200000;
+
+    for (let iter = 0; iter < SIM_ITER; iter++) {
+      const shuffled = [...expandedPalettes];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const result = _packMultiTruck(shuffled, binWidth, binHeight, truckMaxWeight, truckHeight, simH, allowRotation, maxTrucks);
       const score = {
         placed: result.totalPlaced,
         maxX: result.trucks.reduce((mx, t) => Math.max(mx, t.maxX), 0),
         trucks: result.trucks.length
       };
+      totalIterations++;
 
       const isBetter =
         score.placed > bestScore.placed ||
@@ -230,12 +290,13 @@ function solve(params) {
 
       if (isBetter) {
         bestResult = result;
-        bestResult.heuristic = h;
+        bestResult.heuristic = simH;
         bestScore = score;
       }
     }
+
     bestResult.mode = 'calculate';
-    bestResult.iterations = heuristicsToRun.length;
+    bestResult.iterations = totalIterations;
   }
 
   bestResult.totalPalettes = totalPalettes;
