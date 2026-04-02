@@ -212,147 +212,142 @@ function solve(params) {
     bestResult.iterations = iterations;
 
   } else {
-    // --- CALCULATE MODE: hybrid deterministic + simulation ---
-    // Phase 1: try all heuristics × multiple sort strategies (deterministic)
-    const heuristicsToRun = heuristic === 'auto' ? HEURISTICS : [heuristic];
-    const sortStrategies = [
-      { name: 'area-desc', fn: (a, b) => (b.length * b.width) - (a.length * a.width) },
-      { name: 'maxdim-desc', fn: (a, b) => Math.max(b.length, b.width) - Math.max(a.length, a.width) },
-      { name: 'mindim-desc', fn: (a, b) => Math.min(b.length, b.width) - Math.min(a.length, a.width) },
-      { name: 'perim-desc', fn: (a, b) => (b.length + b.width) - (a.length + a.width) },
-      { name: 'width-desc', fn: (a, b) => b.width - a.width || b.length - a.length },
-      { name: 'length-desc', fn: (a, b) => b.length - a.length || b.width - a.width },
-      { name: 'area-asc', fn: (a, b) => (a.length * a.width) - (b.length * b.width) },
-    ];
+    // --- CALCULATE MODE: Deterministic Simulated Annealing ---
+    // Uses a seeded PRNG so the same input ALWAYS gives the same output.
+    // SA can escape local optima (unlike hill climbing) by accepting worse
+    // solutions with a probability that decreases over time (temperature).
 
-    let totalIterations = 0;
-    for (const strategy of sortStrategies) {
-      const sorted = [...expandedPalettes].sort(strategy.fn);
-      // Regroup if needed
-      let ordered = sorted;
-      if (groupContiguous) {
-        const gMap = new Map();
-        for (const p of sorted) {
-          const l = Math.max(p.length, p.width);
-          const w = Math.min(p.length, p.width);
-          const key = `${l}x${w}`;
-          if (!gMap.has(key)) gMap.set(key, []);
-          gMap.get(key).push(p);
-        }
-        ordered = Array.from(gMap.values()).flat();
-      }
-
-      for (const h of heuristicsToRun) {
-        const result = _packMultiTruck(ordered, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
-        const score = {
-          placed: result.totalPlaced,
-          maxX: result.trucks.reduce((mx, t) => Math.max(mx, t.maxX), 0),
-          trucks: result.trucks.length
-        };
-        totalIterations++;
-
-        const isBetter =
-          score.placed > bestScore.placed ||
-          (score.placed === bestScore.placed && score.trucks < bestScore.trucks) ||
-          (score.placed === bestScore.placed && score.trucks === bestScore.trucks && score.maxX < bestScore.maxX);
-
-        if (isBetter) {
-          bestResult = result;
-          bestResult.heuristic = h;
-          bestScore = score;
-        }
-      }
-    }
-
-    // Phase 2: focused random search + Iterated Local Search (ILS)
-    // Use best heuristic from Phase 1 for focused random exploration
-    const phase1Best = bestResult ? bestResult.heuristic : 'BestShortSideFit';
-    const heuristicsPhase2 = heuristic === 'auto' ? HEURISTICS : [heuristic];
-    const RANDOM_TOTAL = 200000;
+    // Seeded PRNG (mulberry32) — deterministic for a given seed
+    const _rng = (seed) => {
+      let s = seed | 0;
+      return () => {
+        s = s + 0x6D2B79F5 | 0;
+        let t = Math.imul(s ^ s >>> 15, 1 | s);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    };
 
     // Helper: evaluate a permutation
     const _eval = (perm, h) => {
       const r = _packMultiTruck(perm, binWidth, binHeight, truckMaxWeight, truckHeight, h, allowRotation, maxTrucks);
-      const s = { placed: r.totalPlaced, maxX: r.trucks.reduce((mx, t) => Math.max(mx, t.maxX), 0), trucks: r.trucks.length };
-      return { result: r, score: s };
+      const maxX = r.trucks.reduce((mx, t) => Math.max(mx, t.maxX), 0);
+      return { result: r, placed: r.totalPlaced, maxX, trucks: r.trucks.length };
     };
-    const _better = (a, b) =>
+
+    // Scalar energy: lower is better. Heavily penalize unplaced palettes.
+    const _energy = (e) => (totalPalettes - e.placed) * 100000 + e.trucks * 10000 + e.maxX;
+
+    const _isBetter = (a, b) =>
       a.placed > b.placed ||
       (a.placed === b.placed && a.trucks < b.trucks) ||
       (a.placed === b.placed && a.trucks === b.trucks && a.maxX < b.maxX);
 
+    // Phase 1: deterministic sort strategies (unchanged, fast)
+    const heuristicsToRun = heuristic === 'auto' ? HEURISTICS : [heuristic];
+    const sortStrategies = [
+      (a, b) => (b.length * b.width) - (a.length * a.width),
+      (a, b) => Math.max(b.length, b.width) - Math.max(a.length, a.width),
+      (a, b) => Math.min(b.length, b.width) - Math.min(a.length, a.width),
+      (a, b) => (b.length + b.width) - (a.length + a.width),
+      (a, b) => b.width - a.width || b.length - a.length,
+      (a, b) => b.length - a.length || b.width - a.width,
+      (a, b) => (a.length * a.width) - (b.length * b.width),
+    ];
+
+    let totalIterations = 0;
     let bestPerm = [...expandedPalettes];
 
-    // Focused random exploration with the best heuristic
-    for (let iter = 0; iter < RANDOM_TOTAL; iter++) {
-      const shuffled = [...expandedPalettes];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      totalIterations++;
-      const { result, score } = _eval(shuffled, phase1Best);
-      if (_better(score, bestScore)) {
-        bestResult = result;
-        bestResult.heuristic = phase1Best;
-        bestScore = score;
-        bestPerm = shuffled;
+    for (const sortFn of sortStrategies) {
+      const sorted = [...expandedPalettes].sort(sortFn);
+      for (const h of heuristicsToRun) {
+        const e = _eval(sorted, h);
+        totalIterations++;
+        if (_isBetter(e, bestScore)) {
+          bestResult = e.result;
+          bestResult.heuristic = h;
+          bestScore = { placed: e.placed, maxX: e.maxX, trucks: e.trucks };
+          bestPerm = sorted;
+        }
       }
     }
 
-    // Hill-climb function: swap all pairs until no improvement
-    const _hillClimb = (perm, h) => {
-      let currentPerm = [...perm];
-      let currentScore = _eval(currentPerm, h).score;
-      let localBest = { perm: currentPerm, score: currentScore };
+    // Phase 2: Simulated Annealing — run on EACH heuristic independently
+    // with different seeds, then keep the overall best.
+    const SA_ITER = 100000;
+    const T_START = 200;     // initial temperature (in cm — accepts ±200cm moves initially)
+    const T_END = 0.01;
+    const alpha = Math.pow(T_END / T_START, 1 / SA_ITER);
 
-      for (let round = 0; round < 30; round++) {
-        let improved = false;
-        const n = currentPerm.length;
-        for (let i = 0; i < n - 1; i++) {
-          for (let j = i + 1; j < n; j++) {
-            const candidate = [...currentPerm];
-            [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
-            totalIterations++;
-            const { result, score } = _eval(candidate, h);
-            if (_better(score, currentScore)) {
-              currentPerm = candidate;
-              currentScore = score;
-              improved = true;
-              // Update global best
-              if (_better(score, bestScore)) {
-                bestResult = result;
-                bestResult.heuristic = h;
-                bestScore = score;
-                bestPerm = candidate;
-              }
-            }
+    for (let hIdx = 0; hIdx < heuristicsToRun.length; hIdx++) {
+      const h = heuristicsToRun[hIdx];
+      const rand = _rng(42 + hIdx * 7919); // different seed per heuristic
+
+      // Start from best known permutation
+      let current = [...bestPerm];
+      let currentE = _eval(current, h);
+      let currentEnergy = _energy(currentE);
+      let T = T_START;
+
+      for (let iter = 0; iter < SA_ITER; iter++) {
+        // Neighbor: swap two random indices
+        const n = current.length;
+        const i = Math.floor(rand() * n);
+        let j = Math.floor(rand() * (n - 1));
+        if (j >= i) j++;
+
+        const candidate = [...current];
+        [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
+
+        const candE = _eval(candidate, h);
+        const candEnergy = _energy(candE);
+        totalIterations++;
+
+        const delta = candEnergy - currentEnergy;
+        // Accept if better, or with probability exp(-delta/T) if worse
+        if (delta <= 0 || rand() < Math.exp(-delta / T)) {
+          current = candidate;
+          currentE = candE;
+          currentEnergy = candEnergy;
+
+          if (_isBetter(candE, bestScore)) {
+            bestResult = candE.result;
+            bestResult.heuristic = h;
+            bestScore = { placed: candE.placed, maxX: candE.maxX, trucks: candE.trucks };
+            bestPerm = candidate;
           }
         }
-        if (!improved) break;
+
+        T *= alpha;
       }
-      return currentPerm;
-    };
-
-    // ILS: hill climb from best, then perturb + hill climb repeatedly
-    _hillClimb(bestPerm, phase1Best);
-
-    // Also try hill climbing with other heuristics from the best permutation
-    for (const h of heuristicsPhase2) {
-      if (h !== phase1Best) _hillClimb(bestPerm, h);
     }
 
-    // Iterated Local Search: perturb then hill climb again
-    const ILS_RESTARTS = 20;
-    for (let restart = 0; restart < ILS_RESTARTS; restart++) {
-      const perturbed = [...bestPerm];
-      const nSwaps = 3 + Math.floor(Math.random() * 3);
-      for (let s = 0; s < nSwaps; s++) {
-        const a = Math.floor(Math.random() * perturbed.length);
-        const b = Math.floor(Math.random() * perturbed.length);
-        [perturbed[a], perturbed[b]] = [perturbed[b], perturbed[a]];
+    // Phase 3: final hill-climb polish from the SA best
+    const finalH = bestResult ? bestResult.heuristic : heuristicsToRun[0];
+    let currentPerm = [...bestPerm];
+    let currentEval = _eval(currentPerm, finalH);
+
+    for (let round = 0; round < 10; round++) {
+      let improved = false;
+      const n = currentPerm.length;
+      for (let i = 0; i < n - 1; i++) {
+        for (let j = i + 1; j < n; j++) {
+          const candidate = [...currentPerm];
+          [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
+          totalIterations++;
+          const candE = _eval(candidate, finalH);
+          if (_isBetter(candE, bestScore)) {
+            currentPerm = candidate;
+            currentEval = candE;
+            bestResult = candE.result;
+            bestResult.heuristic = finalH;
+            bestScore = { placed: candE.placed, maxX: candE.maxX, trucks: candE.trucks };
+            bestPerm = candidate;
+            improved = true;
+          }
+        }
       }
-      _hillClimb(perturbed, bestResult ? bestResult.heuristic : phase1Best);
+      if (!improved) break;
     }
 
     bestResult.mode = 'calculate';
