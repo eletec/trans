@@ -16,14 +16,19 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
   const placements = result?.trucks?.[truckIndex]?.placements || [];
   const truckData = result?.trucks?.[truckIndex];
 
-  // Calculate scale to fit container
+  // Calculate scale to fit container width
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const cw = container.clientWidth - 80;
-    const ch = container.clientHeight - 80;
-    const s = Math.min(cw / binW, ch / binH, 1.5);
-    setScale(s);
+    const updateScale = () => {
+      const cw = container.clientWidth - 80;
+      const s = Math.max(0.3, cw / binW);
+      setScale(s);
+    };
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(container);
+    return () => ro.disconnect();
   }, [binW, binH, truck]);
 
   // Draw
@@ -202,7 +207,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-auto flex items-start justify-start p-2 cursor-crosshair">
+    <div ref={containerRef} className="w-full overflow-auto p-2">
       <canvas
         ref={canvasRef}
         onMouseDown={handleMouseDown}
