@@ -13,7 +13,8 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalette, onD
   const binW = truck.length_cm;
   const binH = truck.width_cm;
 
-  const placements = result?.trucks?.[truckIndex]?.placements || [];
+  const rawPlacements = result?.trucks?.[truckIndex]?.placements || [];
+  const placements = rawPlacements.map((p, i) => p.num ? p : { ...p, num: i + 1 });
   const truckData = result?.trucks?.[truckIndex];
 
   // Calculate scale to fit container width

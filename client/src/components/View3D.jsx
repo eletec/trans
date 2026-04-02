@@ -122,7 +122,9 @@ function ZoomControls({ controlsRef }) {
 }
 
 export default function View3D({ truck, result, truckIndex }) {
-  const placements = result?.trucks?.[truckIndex]?.placements || [];
+  const rawPlacements = result?.trucks?.[truckIndex]?.placements || [];
+  // Ensure num is set (may be missing from old saved projects)
+  const placements = rawPlacements.map((p, i) => p.num ? p : { ...p, num: i + 1 });
   const l = truck.length_cm / 100;
   const w = truck.width_cm / 100;
   const controlsRef = useRef();
