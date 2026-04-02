@@ -9,7 +9,7 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
-import { Eye, Truck, RotateCcw, Trash2, Save } from 'lucide-react';
+import { Eye, Truck, RotateCcw, Trash2, Save, Loader2, Zap } from 'lucide-react';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -330,7 +330,14 @@ export default function App() {
               </div>
 
               {/* Visualization */}
-              <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden min-h-[300px]">
+              <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden min-h-[300px] relative">
+                {loading && (
+                  <div className="absolute inset-0 bg-white/70 z-10 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                    <p className="text-sm text-gray-600 font-medium">Calcul en cours...</p>
+                    <p className="text-xs text-gray-400">Optimisation par recuit simulé</p>
+                  </div>
+                )}
                 {viewMode === '2d' ? (
                   <Canvas2D
                     truck={truck}
