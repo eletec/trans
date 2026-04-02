@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { Settings } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function PreferencesDialog() {
@@ -23,7 +24,7 @@ export default function PreferencesDialog() {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowPrefs(false)}>
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">⚙️ Préférences</h2>
+        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><Settings className="w-5 h-5" /> Préférences</h2>
 
         <div className="space-y-4">
           {/* Localization */}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { ClipboardList, FileText, AlertTriangle } from 'lucide-react';
 
 export default function ResultsPanel({ result }) {
   if (!result) return null;
@@ -7,7 +8,7 @@ export default function ResultsPanel({ result }) {
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 max-h-[300px] overflow-auto">
-      <h3 className="text-sm font-semibold text-gray-700 mb-2">📋 Résultats</h3>
+      <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5"><ClipboardList className="w-4 h-4" /> Résultats</h3>
 
       {/* Summary bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
@@ -51,7 +52,7 @@ export default function ResultsPanel({ result }) {
       {/* Unplaced */}
       {unplaced && unplaced.length > 0 && (
         <div className="bg-red-50 rounded-lg p-2 mb-3">
-          <div className="text-sm font-medium text-red-700 mb-1">⚠️ {unplaced.length} palette(s) non placée(s)</div>
+          <div className="text-sm font-medium text-red-700 mb-1 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> {unplaced.length} palette(s) non placée(s)</div>
           {unplaced.map((p, i) => (
             <div key={i} className="text-xs text-red-600">
               {p.ref} [{p.length * 10}×{p.width * 10}mm] {p.weight}kg
@@ -63,7 +64,7 @@ export default function ResultsPanel({ result }) {
       {/* Log — matching original format */}
       <details open className="text-xs">
         <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">
-          📝 Journal détaillé ({log?.length || 0} lignes)
+          <FileText className="w-4 h-4 inline -mt-0.5" /> Journal détaillé ({log?.length || 0} lignes)
         </summary>
         <pre className="mt-2 bg-gray-900 text-green-400 p-3 rounded-lg overflow-auto max-h-[300px] font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
 {log?.join('\n')}

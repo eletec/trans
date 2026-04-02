@@ -9,6 +9,7 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
+import { Eye, Truck, RefreshCw, RotateCcw, Zap } from 'lucide-react';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -177,7 +178,7 @@ export default function App() {
                              disabled:opacity-50 transition-colors shadow-md text-sm"
                   title="Aperçu rapide (1 passe, pas d'optimisation)"
                 >
-                  {loading && calcMode === 'preview' ? '...' : '👁 Preview'}
+                  {loading && calcMode === 'preview' ? '...' : <><Eye className="w-4 h-4 inline -mt-0.5" /> Preview</>}
                 </button>
                 <button
                   onClick={() => handleCalculate('calculate')}
@@ -186,7 +187,7 @@ export default function App() {
                              disabled:opacity-50 transition-colors shadow-md text-sm"
                   title="Calcul déterministe multi-heuristique"
                 >
-                  {loading && calcMode === 'calculate' ? '...' : '🚛 Calculer'}
+                  {loading && calcMode === 'calculate' ? '...' : <><Truck className="w-4 h-4 inline -mt-0.5" /> Calculer</>}
                 </button>
                 <button
                   onClick={() => handleCalculate('simulation')}
@@ -195,14 +196,14 @@ export default function App() {
                              disabled:opacity-50 transition-colors shadow-md text-sm"
                   title={`Simulation ${iterations} itérations aléatoires`}
                 >
-                  {loading && calcMode === 'simulation' ? '...' : `🔄 Simulation`}
+                  {loading && calcMode === 'simulation' ? '...' : <><RefreshCw className="w-4 h-4 inline -mt-0.5" /> Simulation</>}
                 </button>
                 <button
                   onClick={() => { setResult(null); setError(''); }}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-3 rounded-lg transition-colors"
                   title="Réinitialiser"
                 >
-                  ↺
+                  <RotateCcw className="w-4 h-4" />
                 </button>
               </div>
               {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
@@ -250,7 +251,7 @@ export default function App() {
                     <span>Mode: <strong>{result.mode}</strong></span>
                     <span>Heuristique: <strong>{result.heuristic}</strong></span>
                     {result.iterations > 1 && <span>{result.iterations} iter.</span>}
-                    {result.fromCache && <span className="text-green-600" title="Résultat depuis le cache">⚡ cache</span>}
+                    {result.fromCache && <span className="text-green-600 flex items-center gap-1" title="Résultat depuis le cache"><Zap className="w-3 h-3" /> cache</span>}
                   </span>
                 )}
               </div>

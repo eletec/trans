@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { FolderOpen } from 'lucide-react';
 import { AppContext } from '../App';
 import { api } from '../api/client';
 
@@ -62,7 +63,7 @@ export default function ProjectManager() {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowProjects(false)}>
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">📁 Projets</h2>
+        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><FolderOpen className="w-5 h-5" /> Projets</h2>
 
         {/* Save new */}
         <div className="flex gap-2 mb-4">

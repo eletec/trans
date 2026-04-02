@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { Package } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function PaletteGrid() {
@@ -17,7 +18,7 @@ export default function PaletteGrid() {
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 flex-1 min-h-0 overflow-hidden flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700">📦 Palettes</h3>
+        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Package className="w-4 h-4" /> Palettes</h3>
         <button
           onClick={addPalette}
           className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"

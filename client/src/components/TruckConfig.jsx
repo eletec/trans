@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { Truck } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function TruckConfig() {
@@ -16,7 +17,7 @@ export default function TruckConfig() {
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        🚛 Configuration Camion
+        <Truck className="w-4 h-4" /> Configuration Camion
       </h3>
       <div className="mb-3">
         <select

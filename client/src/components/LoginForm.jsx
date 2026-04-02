@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Truck } from 'lucide-react';
 import { api } from '../api/client';
 
 export default function LoginForm({ onLogin }) {
@@ -32,7 +33,7 @@ export default function LoginForm({ onLogin }) {
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <span className="text-5xl">🚛</span>
+          <Truck className="w-12 h-12 text-blue-600 mx-auto" />
           <h2 className="text-2xl font-bold text-gray-800 mt-2">ADC Trans</h2>
           <p className="text-gray-500 text-sm">Optimisation de chargement camions</p>
         </div>

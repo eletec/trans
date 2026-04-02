@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import { Ruler } from 'lucide-react';
 import { AppContext } from '../App';
 
 /**
@@ -45,7 +46,7 @@ export default function PaletteConfigDialog() {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowPaletteConfig(false)}>
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-gray-800 mb-2">📐 Configuration Palettes</h2>
+        <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2"><Ruler className="w-5 h-5" /> Configuration Palettes</h2>
         <p className="text-sm text-gray-500 mb-4">
           Définir les formats standards avec couleur et libellé
         </p>

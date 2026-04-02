@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { Truck, FolderOpen, SlidersHorizontal, Settings, User, LogOut } from 'lucide-react';
 import { AppContext } from '../App';
 
 export default function Layout({ children }) {
@@ -10,7 +11,7 @@ export default function Layout({ children }) {
       <header className="bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg">
         <div className="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🚛</span>
+            <Truck className="w-7 h-7" />
             <div>
               <h1 className="text-xl font-bold tracking-tight">ADC Trans</h1>
               <p className="text-blue-200 text-xs">Optimisation chargement camions</p>
@@ -23,27 +24,27 @@ export default function Layout({ children }) {
                 onClick={() => setShowProjects(true)}
                 className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 transition-colors"
               >
-                📁 Projets
+                <FolderOpen className="w-4 h-4 inline -mt-0.5" /> Projets
               </button>
               <button
                 onClick={() => setShowPaletteConfig(true)}
                 className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 transition-colors"
               >
-                📐 Config. Palettes
+                <SlidersHorizontal className="w-4 h-4 inline -mt-0.5" /> Config. Palettes
               </button>
               <button
                 onClick={() => setShowPrefs(true)}
                 className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 transition-colors"
               >
-                ⚙️ Préférences
+                <Settings className="w-4 h-4 inline -mt-0.5" /> Préférences
               </button>
               <div className="ml-4 flex items-center gap-2 text-sm">
-                <span className="text-blue-200">👤 {user.username}</span>
+                <span className="text-blue-200 flex items-center gap-1"><User className="w-4 h-4" /> {user.username}</span>
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 transition-colors flex items-center gap-1"
                 >
-                  Déconnexion
+                  <LogOut className="w-4 h-4" /> Déconnexion
                 </button>
               </div>
             </nav>
