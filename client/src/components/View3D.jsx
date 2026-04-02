@@ -11,6 +11,8 @@ function Palette3D({ placement }) {
   const pw = placedWidth / 100;
   const pd = placedHeight / 100;
   const label = `${ref || '?'} #${num || '?'}`;
+  // Rotate top label to align with longest dimension
+  const topRotZ = pd > pw ? Math.PI / 2 : 0;
 
   return (
     <group position={[px, h3d / 2, pz]}>
@@ -24,11 +26,11 @@ function Palette3D({ placement }) {
         <edgesGeometry args={[new THREE.BoxGeometry(pw, h3d, pd)]} />
         <lineBasicMaterial color="#1e293b" opacity={0.4} transparent />
       </lineSegments>
-      {/* Top label */}
+      {/* Top label — oriented along longest dimension */}
       <Text
         position={[0, h3d / 2 + 0.03, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={Math.min(0.14, pw * 0.35, pd * 0.35)}
+        rotation={[-Math.PI / 2, 0, topRotZ]}
+        fontSize={Math.min(0.14, Math.max(pw, pd) * 0.3)}
         color="#1e293b"
         anchorX="center"
         anchorY="middle"
@@ -36,7 +38,7 @@ function Palette3D({ placement }) {
       >
         {label}
       </Text>
-      {/* Front face label (z+ side) */}
+      {/* Front face label (z+ side) — text along width (pw) */}
       <Text
         position={[0, 0, pd / 2 + 0.01]}
         fontSize={Math.min(0.12, pw * 0.3, h3d * 0.3)}
@@ -47,7 +49,7 @@ function Palette3D({ placement }) {
       >
         {label}
       </Text>
-      {/* Right side label (x+ side) */}
+      {/* Right side label (x+ side) — text along depth (pd) */}
       <Text
         position={[pw / 2 + 0.01, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
