@@ -79,32 +79,29 @@ function resolveCollisions(placements, fixedIndices, binW, binH) {
   });
 
   // 4. For each group, find best contiguous block placement
+  //    Priority: pack as far left as possible (minimize maxX = no gaps)
   for (const group of sortedGroups) {
     const pw = items[group[0]].pw;
     const ph = items[group[0]].ph;
     const count = group.length;
 
-    // Build candidate positions from edges of all placed palettes + bin edges
+    // Build candidate anchor positions from edges of all placed palettes + bin edges
     const anchors = [{ x: 0, y: 0 }];
     for (let j = 0; j < items.length; j++) {
-      if (items[j].x < -999) continue; // skip removed
+      if (items[j].x < -999) continue;
       const o = items[j];
       anchors.push({ x: o.x + o.pw, y: 0 });
       anchors.push({ x: o.x + o.pw, y: o.y });
+      anchors.push({ x: 0, y: o.y });
       anchors.push({ x: 0, y: o.y + o.ph });
       anchors.push({ x: o.x, y: o.y + o.ph });
       anchors.push({ x: o.x + o.pw, y: o.y + o.ph });
     }
 
-    // For each anchor, try to fit a block of `count` palettes in grid arrangements
     let bestPlacement = null;
-    let bestDist = Infinity;
-    // Average original position of this group (for preferring nearby placements)
-    const origIdxInDisp = group.map(i => displaced.indexOf(i));
-    const avgOrigX = origIdxInDisp.reduce((s, di) => s + savedPositions[di].x, 0) / count;
-    const avgOrigY = origIdxInDisp.reduce((s, di) => s + savedPositions[di].y, 0) / count;
+    let bestMaxX = Infinity;  // minimize rightmost edge = pack left, no gaps
 
-    // Try grid arrangements: rows × cols
+    // Try grid arrangements: rows × cols, both orientations
     const arrangements = [];
     for (const [cellW, cellH] of [[pw, ph], [ph, pw]]) {
       const maxCols = Math.floor(binW / cellW);
@@ -122,7 +119,6 @@ function resolveCollisions(placements, fixedIndices, binW, binH) {
         const ax = Math.max(0, Math.round(anchor.x));
         const ay = Math.max(0, Math.round(anchor.y));
 
-        // Check if entire block fits within bin
         if (ax + arr.cols * arr.cellW > binW) continue;
         if (ay + arr.rows * arr.cellH > binH) continue;
 
@@ -134,7 +130,6 @@ function resolveCollisions(placements, fixedIndices, binW, binH) {
             const cx = ax + c * arr.cellW;
             const cy = ay + r * arr.cellH;
             const test = { x: cx, y: cy, pw: arr.cellW, ph: arr.cellH };
-            // Check against all non-displaced items
             let free = true;
             for (let j = 0; j < items.length; j++) {
               if (items[j].x < -999) continue;
@@ -148,20 +143,25 @@ function resolveCollisions(placements, fixedIndices, binW, binH) {
 
         if (!allFree || positions.length < count) continue;
 
-        // Distance from original position
-        const blockCenterX = positions.reduce((s, p) => s + p.x, 0) / count;
-        const blockCenterY = positions.reduce((s, p) => s + p.y, 0) / count;
-        const dist = Math.abs(blockCenterX - avgOrigX) + Math.abs(blockCenterY - avgOrigY);
+        // Compute maxX of entire truck if we place here
+        // = max of all non-displaced maxX + this block's right edge
+        let candidateMaxX = 0;
+        for (let j = 0; j < items.length; j++) {
+          if (items[j].x < -999) continue;
+          candidateMaxX = Math.max(candidateMaxX, items[j].x + items[j].pw);
+        }
+        const blockRight = positions.reduce((mx, p) => Math.max(mx, p.x + p.cellW), 0);
+        candidateMaxX = Math.max(candidateMaxX, blockRight);
 
-        if (dist < bestDist) {
-          bestDist = dist;
+        // Prefer leftmost placement (smallest maxX), break ties by smallest block X
+        if (candidateMaxX < bestMaxX || (candidateMaxX === bestMaxX && ax < (bestPlacement ? bestPlacement[0].x : Infinity))) {
+          bestMaxX = candidateMaxX;
           bestPlacement = positions;
         }
       }
     }
 
     if (bestPlacement) {
-      // Place the group in the found block
       for (let k = 0; k < group.length; k++) {
         const i = group[k];
         items[i] = {
@@ -173,30 +173,31 @@ function resolveCollisions(placements, fixedIndices, binW, binH) {
         };
       }
     } else {
-      // Fallback: place individually at nearest free position
+      // Fallback: place individually, leftmost free position
       for (const i of group) {
         const a = items[i];
-        const diIdx = displaced.indexOf(i);
-        items[i] = { ...items[i], x: savedPositions[diIdx].x, y: savedPositions[diIdx].y };
+        items[i] = { ...items[i], x: -9999, y: -9999 }; // keep removed while finding
 
         const cands = [{ x: 0, y: 0 }];
         for (let j = 0; j < items.length; j++) {
           if (j === i || items[j].x < -999) continue;
           const o = items[j];
-          cands.push({ x: o.x + o.pw, y: a.y });
+          cands.push({ x: o.x + o.pw, y: 0 });
           cands.push({ x: o.x + o.pw, y: o.y });
-          cands.push({ x: a.x, y: o.y + o.ph });
+          cands.push({ x: 0, y: o.y + o.ph });
           cands.push({ x: o.x, y: o.y + o.ph });
         }
 
-        let bestX = 0, bestY = 0, bd = Infinity;
+        let bestX = 0, bestY = 0, bestMX = Infinity;
         for (const c of cands) {
           const cx = Math.max(0, Math.min(binW - a.pw, Math.round(c.x)));
           const cy = Math.max(0, Math.min(binH - a.ph, Math.round(c.y)));
           const test = { x: cx, y: cy, pw: a.pw, ph: a.ph };
           if (!_isFree(test, items, i)) continue;
-          const dist = Math.abs(cx - savedPositions[diIdx].x) + Math.abs(cy - savedPositions[diIdx].y);
-          if (dist < bd) { bd = dist; bestX = cx; bestY = cy; }
+          // Prefer leftmost
+          if (cx + a.pw < bestMX || (cx + a.pw === bestMX && cy < bestY)) {
+            bestMX = cx + a.pw; bestX = cx; bestY = cy;
+          }
         }
         items[i] = { ...items[i], x: bestX, y: bestY };
       }
