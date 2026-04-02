@@ -9,7 +9,7 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
-import { Eye, Truck, RefreshCw, RotateCcw, Zap } from 'lucide-react';
+import { Eye, Truck, RefreshCw, RotateCcw, Zap, Trash2 } from 'lucide-react';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -204,6 +204,16 @@ export default function App() {
                   title="Réinitialiser"
                 >
                   <RotateCcw className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={async () => {
+                    try { await api.clearCache(); setResult(null); setError(''); }
+                    catch(e) { setError('Erreur: ' + e.message); }
+                  }}
+                  className="bg-red-100 hover:bg-red-200 text-red-600 py-3 px-3 rounded-lg transition-colors"
+                  title="Vider le cache et recalculer"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
               {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
