@@ -14,49 +14,6 @@ import { api } from './api/client';
 
 export const AppContext = createContext();
 
-// ── Push only colliding palettes during drag ────────────────────
-function _collides(a, b) {
-  return a.x < b.x + b.placedWidth && a.x + a.placedWidth > b.x &&
-         a.y < b.y + b.placedHeight && a.y + a.placedHeight > b.y;
-}
-
-function pushColliders(placements, dragIdx, binW, binH) {
-  const dragged = placements[dragIdx];
-  const result = [...placements];
-
-  for (let i = 0; i < result.length; i++) {
-    if (i === dragIdx) continue;
-    const p = result[i];
-    if (!_collides(dragged, p)) continue;
-
-    // Push colliding palette to nearest free spot
-    // Try right of dragged first, then below, then left, then above
-    const candidates = [
-      { x: dragged.x + dragged.placedWidth, y: p.y },  // right
-      { x: p.x, y: dragged.y + dragged.placedHeight },  // below
-      { x: dragged.x - p.placedWidth, y: p.y },          // left
-      { x: p.x, y: dragged.y - p.placedHeight },         // above
-    ];
-
-    let best = null, bestDist = Infinity;
-    for (const c of candidates) {
-      // Clamp to bin bounds
-      const cx = Math.max(0, Math.min(binW - p.placedWidth, c.x));
-      const cy = Math.max(0, Math.min(binH - p.placedHeight, c.y));
-      const fake = { x: cx, y: cy, placedWidth: p.placedWidth, placedHeight: p.placedHeight };
-      // Check no collision with dragged at new position
-      if (_collides(dragged, fake)) continue;
-      const dist = Math.abs(cx - p.x) + Math.abs(cy - p.y);
-      if (dist < bestDist) { bestDist = dist; best = { x: cx, y: cy }; }
-    }
-    if (best) {
-      result[i] = { ...p, x: best.x, y: best.y };
-    }
-  }
-  return result;
-}
-// ─────────────────────────────────────────────────────────────────
-
 const DEFAULT_TRUCK = {
   length_cm: 1360,
   width_cm: 245,
@@ -221,14 +178,10 @@ export default function App() {
     setResult(prev => {
       const next = { ...prev, trucks: [...prev.trucks] };
       const trk = { ...next.trucks[truckIdx] };
-      // Move the dragged palette
-      const updated = trk.placements.map((p, i) =>
+      trk.placements = trk.placements.map((p, i) =>
         i === palIdx ? { ...p, x: Math.round(newX), y: Math.round(newY) } : p
       );
-      // Push only colliding palettes out of the way
-      const repacked = pushColliders(updated, palIdx, truck.length_cm, truck.width_cm);
-      const maxX = repacked.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
-      trk.placements = repacked;
+      const maxX = trk.placements.reduce((mx, p) => Math.max(mx, p.x + p.placedWidth), 0);
       trk.maxX = maxX;
       trk.floorMeters = maxX / 100;
       next.trucks[truckIdx] = trk;
