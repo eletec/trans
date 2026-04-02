@@ -216,29 +216,42 @@ export default function App() {
 
   const handlePrint = () => {
     if (!result || !result.trucks) return;
-    const truckData = result.trucks[activeTruckIndex];
-    if (!truckData) return;
 
-    // Get the 2D canvas image
-    const canvas = document.querySelector('canvas');
-    const canvasDataUrl = canvas ? canvas.toDataURL('image/png') : '';
+    // Gather all 2D canvas images (one per truck rendered in the DOM)
+    const canvases = document.querySelectorAll('canvas');
+    const canvasImages = Array.from(canvases).map(c => {
+      try { return c.toDataURL('image/png'); } catch { return ''; }
+    });
 
-    // Build palette table rows
-    const paletteRows = truckData.placements.map((p, i) =>
-      `<tr>
-        <td>${i + 1}</td>
-        <td>${p.ref || '-'}</td>
-        <td style="width:20px;height:14px;background:${p.color || '#ccc'};border:1px solid #999"></td>
-        <td>${p.placedWidth * 10} × ${p.placedHeight * 10}</td>
-        <td>${p.weight || '-'}</td>
-        <td>(${p.x}, ${p.y})</td>
-        <td>${p.rotated ? 'Oui' : 'Non'}</td>
-      </tr>`
-    ).join('');
+    // Build per-truck sections
+    const truckSections = result.trucks.map((truckData, tIdx) => {
+      const paletteRows = truckData.placements.map((p, i) =>
+        `<tr>
+          <td>#${p.num || (i + 1)}</td>
+          <td>${p.ref || '-'}</td>
+          <td style="width:20px;height:14px;background:${p.color || '#ccc'};border:1px solid #999"></td>
+          <td>${p.placedWidth * 10} × ${p.placedHeight * 10}</td>
+          <td>${p.weight || '-'}</td>
+          <td>(${p.x}, ${p.y})</td>
+          <td>${p.rotated ? 'Oui' : 'Non'}</td>
+        </tr>`
+      ).join('');
+
+      const imgSrc = canvasImages[tIdx] || '';
+      return `
+<h2>Camion ${tIdx + 1} — ${truckData.floorMeters?.toFixed(2)}m — ${truckData.placements.length} palette(s) — ${truckData.totalWeight}kg — ${(truckData.occupancy * 100).toFixed(1)}%</h2>
+<div class="plan-img">
+  ${imgSrc ? `<img src="${imgSrc}" />` : '<p>Vue non disponible</p>'}
+</div>
+<table>
+  <thead><tr><th>#</th><th>Réf</th><th>Couleur</th><th>Dimensions (mm)</th><th>Poids (kg)</th><th>Position (cm)</th><th>Pivoté</th></tr></thead>
+  <tbody>${paletteRows}</tbody>
+</table>`;
+    }).join('\n<div style="page-break-before:always"></div>\n');
 
     // Multi-truck summary
     const truckSummaryRows = result.trucks.map((t, i) =>
-      `<tr${i === activeTruckIndex ? ' style="background:#e0e7ff"' : ''}>
+      `<tr>
         <td><strong>Camion ${i + 1}</strong></td>
         <td>${t.placements.length} palettes</td>
         <td>${t.floorMeters?.toFixed(2)}m</td>
@@ -279,7 +292,7 @@ export default function App() {
   </div>
   <div class="header-right">
     ${new Date().toLocaleString('fr-FR')}<br>
-    Camion ${activeTruckIndex + 1}/${result.trucks.length}
+    ${result.trucks.length} camion(s)
   </div>
 </div>
 
@@ -295,9 +308,6 @@ export default function App() {
 <div class="summary">
   <div class="summary-item"><div class="val">${result.totalPlaced}/${result.totalPalettes}</div><div class="lbl">Palettes placées</div></div>
   <div class="summary-item"><div class="val">${result.trucks.length}</div><div class="lbl">Camion(s)</div></div>
-  <div class="summary-item"><div class="val">${truckData.floorMeters?.toFixed(2)}m</div><div class="lbl">Mètres plancher</div></div>
-  <div class="summary-item"><div class="val">${truckData.totalWeight}kg</div><div class="lbl">Poids</div></div>
-  <div class="summary-item"><div class="val">${(truckData.occupancy * 100).toFixed(1)}%</div><div class="lbl">Occupé</div></div>
 </div>
 
 ${result.trucks.length > 1 ? `
@@ -306,16 +316,7 @@ ${result.trucks.length > 1 ? `
 <tbody>${truckSummaryRows}</tbody></table>
 ` : ''}
 
-<h2>Plan de chargement — Camion ${activeTruckIndex + 1}</h2>
-<div class="plan-img">
-  ${canvasDataUrl ? `<img src="${canvasDataUrl}" />` : '<p>Vue non disponible</p>'}
-</div>
-
-<h2>Détail des palettes (${truckData.placements.length})</h2>
-<table>
-  <thead><tr><th>#</th><th>Réf</th><th>Couleur</th><th>Dimensions (mm)</th><th>Poids (kg)</th><th>Position (cm)</th><th>Pivoté</th></tr></thead>
-  <tbody>${paletteRows}</tbody>
-</table>
+${truckSections}
 
 <div class="footer">
   Easy Packing — Heuristique: ${result.heuristic} — Mode: ${result.mode}${result.iterations > 1 ? ` — ${result.iterations} itérations` : ''}
@@ -326,7 +327,6 @@ ${result.trucks.length > 1 ? `
     printWin.document.write(printHtml);
     printWin.document.close();
     printWin.focus();
-    // Wait for image to load then print
     setTimeout(() => { printWin.print(); }, 500);
   };
 
@@ -434,19 +434,7 @@ ${result.trucks.length > 1 ? `
                 </button>
 
                 {result && result.trucks && result.trucks.length > 1 && (
-                  <div className="flex gap-1 ml-4">
-                    {result.trucks.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveTruckIndex(i)}
-                        className={`px-3 py-1 rounded text-sm ${
-                          activeTruckIndex === i ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                        }`}
-                      >
-                        Camion {i + 1}
-                      </button>
-                    ))}
-                  </div>
+                  <span className="ml-2 text-sm text-gray-500 font-medium">{result.trucks.length} camions</span>
                 )}
 
                 {result && (
@@ -466,8 +454,8 @@ ${result.trucks.length > 1 ? `
                 )}
               </div>
 
-              {/* Visualization */}
-              <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden min-h-[300px] relative">
+              {/* Visualization — all trucks stacked */}
+              <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-auto min-h-[300px] relative">
                 {loading && (
                   <div className="absolute inset-0 bg-white/70 z-10 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
@@ -475,20 +463,36 @@ ${result.trucks.length > 1 ? `
                     <p className="text-xs text-gray-400">Optimisation par recuit simulé</p>
                   </div>
                 )}
-                {viewMode === '2d' ? (
-                  <Canvas2D
-                    truck={truck}
-                    result={result}
-                    truckIndex={activeTruckIndex}
-                    onDragPalette={handleDragPalette}
-                    onDropPalette={handleDropPalette}
-                  />
-                ) : (
-                  <View3D
-                    truck={truck}
-                    result={result}
-                    truckIndex={activeTruckIndex}
-                  />
+                {result && result.trucks && result.trucks.map((trk, tIdx) => (
+                  <div key={tIdx}>
+                    {result.trucks.length > 1 && (
+                      <div className="bg-gray-100 border-b border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700">
+                        Camion {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} palette(s) — {trk.totalWeight}kg
+                      </div>
+                    )}
+                    <div style={{ minHeight: '300px' }}>
+                      {viewMode === '2d' ? (
+                        <Canvas2D
+                          truck={truck}
+                          result={result}
+                          truckIndex={tIdx}
+                          onDragPalette={handleDragPalette}
+                          onDropPalette={handleDropPalette}
+                        />
+                      ) : (
+                        <View3D
+                          truck={truck}
+                          result={result}
+                          truckIndex={tIdx}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {!result && (
+                  <div className="flex items-center justify-center h-full min-h-[300px]">
+                    <p className="text-gray-400 text-lg">Lancez un calcul pour afficher le résultat</p>
+                  </div>
                 )}
               </div>
 
