@@ -9,7 +9,7 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
-import { Eye, Truck, RefreshCw, RotateCcw, Zap, Trash2 } from 'lucide-react';
+import { Eye, Truck, RotateCcw, Trash2 } from 'lucide-react';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -49,7 +49,7 @@ export default function App() {
   const [allowRotation, setAllowRotation] = useState(true);
   const [groupContiguous, setGroupContiguous] = useState(true);
   const [maxTrucks, setMaxTrucks] = useState(5);
-  const [calcMode, setCalcMode] = useState('calculate'); // 'preview' | 'calculate' | 'simulation'
+  const [calcMode, setCalcMode] = useState('calculate'); // 'preview' | 'calculate'
   const [iterations, setIterations] = useState(1000);
   const [showPrefs, setShowPrefs] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
@@ -195,18 +195,9 @@ export default function App() {
                   disabled={loading}
                   className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg
                              disabled:opacity-50 transition-colors shadow-md text-sm"
-                  title="Calcul déterministe multi-heuristique"
+                  title="Calcul optimal (Recuit Simulé)"
                 >
                   {loading && calcMode === 'calculate' ? '...' : <><Truck className="w-4 h-4 inline -mt-0.5" /> Calculer</>}
-                </button>
-                <button
-                  onClick={() => handleCalculate('simulation')}
-                  disabled={loading}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg
-                             disabled:opacity-50 transition-colors shadow-md text-sm"
-                  title={`Simulation ${iterations} itérations aléatoires`}
-                >
-                  {loading && calcMode === 'simulation' ? '...' : <><RefreshCw className="w-4 h-4 inline -mt-0.5" /> Simulation</>}
                 </button>
                 <button
                   onClick={() => { setResult(null); setError(''); }}

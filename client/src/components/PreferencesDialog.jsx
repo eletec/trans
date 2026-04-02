@@ -64,15 +64,6 @@ export default function PreferencesDialog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Itérations (mode simulation)</label>
-                <input
-                  type="number" min={10} max={500000} value={iterations}
-                  onChange={e => setIterations(Math.max(10, Number(e.target.value)))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mode de calcul par défaut</label>
                 <select
                   value={calcMode}
@@ -80,8 +71,7 @@ export default function PreferencesDialog() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                   <option value="preview">Preview — aperçu rapide</option>
-                  <option value="calculate">Calculer — multi-heuristique</option>
-                  <option value="simulation">Simulation — itérations aléatoires</option>
+                  <option value="calculate">Calculer — Recuit Simulé (optimal)</option>
                 </select>
               </div>
 
