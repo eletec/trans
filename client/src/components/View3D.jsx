@@ -1,6 +1,6 @@
-import React from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text, Billboard } from '@react-three/drei';
+import React, { useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
 
 function Palette3D({ placement }) {
@@ -109,13 +109,55 @@ function TruckTrailer({ length, width, height }) {
   );
 }
 
+function ZoomControls({ controlsRef }) {
+  const { camera } = useThree();
+  const zoom = (factor) => {
+    if (!controlsRef.current) return;
+    const dir = new THREE.Vector3();
+    dir.subVectors(camera.position, controlsRef.current.target).normalize();
+    camera.position.addScaledVector(dir, factor);
+    controlsRef.current.update();
+  };
+  return null;
+}
+
 export default function View3D({ truck, result, truckIndex }) {
   const placements = result?.trucks?.[truckIndex]?.placements || [];
   const l = truck.length_cm / 100;
   const w = truck.width_cm / 100;
+  const controlsRef = useRef();
+
+  const zoomBtn = "w-8 h-8 flex items-center justify-center rounded-lg bg-white/90 shadow border border-gray-300 text-gray-700 hover:bg-gray-100 text-lg font-bold select-none cursor-pointer";
 
   return (
-    <div className="w-full h-full min-h-[400px]">
+    <div className="w-full h-full min-h-[400px] relative">
+      {/* Zoom buttons */}
+      <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
+        <button className={zoomBtn} onClick={() => {
+          if (controlsRef.current) {
+            const cam = controlsRef.current.object;
+            const dir = new THREE.Vector3().subVectors(cam.position, controlsRef.current.target).normalize();
+            cam.position.addScaledVector(dir, -1.5);
+            controlsRef.current.update();
+          }
+        }} title="Zoom avant">+</button>
+        <button className={zoomBtn} onClick={() => {
+          if (controlsRef.current) {
+            const cam = controlsRef.current.object;
+            const dir = new THREE.Vector3().subVectors(cam.position, controlsRef.current.target).normalize();
+            cam.position.addScaledVector(dir, 1.5);
+            controlsRef.current.update();
+          }
+        }} title="Zoom arrière">−</button>
+        <button className={zoomBtn + " text-sm"} onClick={() => {
+          if (controlsRef.current) {
+            const cam = controlsRef.current.object;
+            cam.position.set(l * 0.7, 4, w + 5);
+            controlsRef.current.target.set(l / 2, 1, w / 2);
+            controlsRef.current.update();
+          }
+        }} title="Réinitialiser la vue">⌂</button>
+      </div>
       <Canvas
         shadows
         camera={{ position: [l * 0.7, 4, w + 5], fov: 45 }}
@@ -155,6 +197,7 @@ export default function View3D({ truck, result, truckIndex }) {
         </mesh>
 
         <OrbitControls
+          ref={controlsRef}
           target={[l / 2, 1, w / 2]}
           maxPolarAngle={Math.PI * 0.48}
           minDistance={2}
