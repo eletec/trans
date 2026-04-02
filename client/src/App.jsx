@@ -9,7 +9,7 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
-import { Eye, Truck, RotateCcw, Trash2, Save, Loader2, Zap } from 'lucide-react';
+import { Eye, Truck, RotateCcw, Trash2, Save, Loader2, Zap, Printer } from 'lucide-react';
 import { api } from './api/client';
 
 export const AppContext = createContext();
@@ -200,6 +200,122 @@ export default function App() {
     }
   };
 
+  const handlePrint = () => {
+    if (!result || !result.trucks) return;
+    const truckData = result.trucks[activeTruckIndex];
+    if (!truckData) return;
+
+    // Get the 2D canvas image
+    const canvas = document.querySelector('canvas');
+    const canvasDataUrl = canvas ? canvas.toDataURL('image/png') : '';
+
+    // Build palette table rows
+    const paletteRows = truckData.placements.map((p, i) =>
+      `<tr>
+        <td>${i + 1}</td>
+        <td>${p.ref || '-'}</td>
+        <td style="width:20px;height:14px;background:${p.color || '#ccc'};border:1px solid #999"></td>
+        <td>${p.placedWidth * 10} × ${p.placedHeight * 10}</td>
+        <td>${p.weight || '-'}</td>
+        <td>(${p.x}, ${p.y})</td>
+        <td>${p.rotated ? 'Oui' : 'Non'}</td>
+      </tr>`
+    ).join('');
+
+    // Multi-truck summary
+    const truckSummaryRows = result.trucks.map((t, i) =>
+      `<tr${i === activeTruckIndex ? ' style="background:#e0e7ff"' : ''}>
+        <td><strong>Camion ${i + 1}</strong></td>
+        <td>${t.placements.length} palettes</td>
+        <td>${t.floorMeters?.toFixed(2)}m</td>
+        <td>${t.totalWeight}kg</td>
+        <td>${(t.occupancy * 100).toFixed(1)}%</td>
+      </tr>`
+    ).join('');
+
+    const printHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Plan de chargement — Easy Packing</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #333; padding: 15mm; }
+  h1 { font-size: 18px; margin-bottom: 2px; }
+  h2 { font-size: 14px; margin: 12px 0 6px; color: #1e40af; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 2px solid #1e40af; padding-bottom: 8px; }
+  .header-left h1 { color: #1e40af; }
+  .header-right { text-align: right; font-size: 10px; color: #666; }
+  .summary { display: flex; gap: 20px; margin: 8px 0; }
+  .summary-item { background: #f1f5f9; border-radius: 6px; padding: 8px 14px; text-align: center; }
+  .summary-item .val { font-size: 16px; font-weight: bold; color: #1e40af; }
+  .summary-item .lbl { font-size: 9px; color: #64748b; }
+  .plan-img { text-align: center; margin: 10px 0; }
+  .plan-img img { max-width: 100%; height: auto; border: 1px solid #e2e8f0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 3px 6px; text-align: left; font-size: 10px; }
+  th { background: #f1f5f9; font-weight: 600; }
+  .truck-config { display: flex; gap: 20px; font-size: 10px; margin: 4px 0; }
+  .footer { margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 5px; font-size: 9px; color: #999; text-align: center; }
+  @media print { body { padding: 10mm; } }
+</style>
+</head><body>
+<div class="header">
+  <div class="header-left">
+    <h1>🚛 Easy Packing — Plan de chargement</h1>
+    <span>${currentProjectName || 'Sans nom'}</span>
+  </div>
+  <div class="header-right">
+    ${new Date().toLocaleString('fr-FR')}<br>
+    Camion ${activeTruckIndex + 1}/${result.trucks.length}
+  </div>
+</div>
+
+<h2>Configuration camion</h2>
+<div class="truck-config">
+  <span>Longueur: <strong>${truck.length_cm} cm</strong></span>
+  <span>Largeur: <strong>${truck.width_cm} cm</strong></span>
+  <span>Hauteur: <strong>${truck.height_cm} cm</strong></span>
+  <span>Poids max: <strong>${truck.max_weight_kg} kg</strong></span>
+</div>
+
+<h2>Résumé</h2>
+<div class="summary">
+  <div class="summary-item"><div class="val">${result.totalPlaced}/${result.totalPalettes}</div><div class="lbl">Palettes placées</div></div>
+  <div class="summary-item"><div class="val">${result.trucks.length}</div><div class="lbl">Camion(s)</div></div>
+  <div class="summary-item"><div class="val">${truckData.floorMeters?.toFixed(2)}m</div><div class="lbl">Mètres plancher</div></div>
+  <div class="summary-item"><div class="val">${truckData.totalWeight}kg</div><div class="lbl">Poids</div></div>
+  <div class="summary-item"><div class="val">${(truckData.occupancy * 100).toFixed(1)}%</div><div class="lbl">Occupé</div></div>
+</div>
+
+${result.trucks.length > 1 ? `
+<h2>Détail par camion</h2>
+<table><thead><tr><th>Camion</th><th>Palettes</th><th>Plancher</th><th>Poids</th><th>Occupé</th></tr></thead>
+<tbody>${truckSummaryRows}</tbody></table>
+` : ''}
+
+<h2>Plan de chargement — Camion ${activeTruckIndex + 1}</h2>
+<div class="plan-img">
+  ${canvasDataUrl ? `<img src="${canvasDataUrl}" />` : '<p>Vue non disponible</p>'}
+</div>
+
+<h2>Détail des palettes (${truckData.placements.length})</h2>
+<table>
+  <thead><tr><th>#</th><th>Réf</th><th>Couleur</th><th>Dimensions (mm)</th><th>Poids (kg)</th><th>Position (cm)</th><th>Pivoté</th></tr></thead>
+  <tbody>${paletteRows}</tbody>
+</table>
+
+<div class="footer">
+  Easy Packing — Heuristique: ${result.heuristic} — Mode: ${result.mode}${result.iterations > 1 ? ` — ${result.iterations} itérations` : ''}
+</div>
+</body></html>`;
+
+    const printWin = window.open('', '_blank', 'width=900,height=700');
+    printWin.document.write(printHtml);
+    printWin.document.close();
+    printWin.focus();
+    // Wait for image to load then print
+    setTimeout(() => { printWin.print(); }, 500);
+  };
+
   const ctx = {
     user, setUser, palettes, setPalettes, truck, setTruck,
     result, setResult, loading, viewMode, setViewMode,
@@ -320,11 +436,18 @@ export default function App() {
                 )}
 
                 {result && (
-                  <span className="ml-auto text-sm text-gray-500 flex gap-3">
+                  <span className="ml-auto text-sm text-gray-500 flex gap-3 items-center">
                     <span>Mode: <strong>{result.mode}</strong></span>
                     <span>Heuristique: <strong>{result.heuristic}</strong></span>
                     {result.iterations > 1 && <span>{result.iterations} iter.</span>}
                     {result.fromCache && <span className="text-green-600 flex items-center gap-1" title="Résultat depuis le cache"><Zap className="w-3 h-3" /> cache</span>}
+                    <button
+                      onClick={handlePrint}
+                      className="ml-2 px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors flex items-center gap-1"
+                      title="Imprimer le plan de chargement"
+                    >
+                      <Printer className="w-4 h-4" /> Imprimer
+                    </button>
                   </span>
                 )}
               </div>
