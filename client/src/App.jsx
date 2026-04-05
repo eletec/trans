@@ -223,17 +223,18 @@ const DEFAULT_TRUCK = {
   length_cm: 1360,
   width_cm: 245,
   height_cm: 270,
-  max_weight_kg: 24000
+  max_weight_kg: 24000,
+  axle_rear_cm: 1160,
 };
 
 // Standard transport container presets
 const TRUCK_PRESETS = [
-  { name: 'Semi-remorque 13.6m', length_cm: 1360, width_cm: 245, height_cm: 270, max_weight_kg: 24000 },
-  { name: 'Porteur 7.7m', length_cm: 770, width_cm: 245, height_cm: 270, max_weight_kg: 11000 },
-  { name: 'Fourgon 20m³', length_cm: 430, width_cm: 210, height_cm: 220, max_weight_kg: 1200 },
-  { name: 'Container 20\'', length_cm: 590, width_cm: 235, height_cm: 239, max_weight_kg: 21770 },
-  { name: 'Container 40\'', length_cm: 1203, width_cm: 235, height_cm: 239, max_weight_kg: 26680 },
-  { name: 'Container 40\' HC', length_cm: 1203, width_cm: 235, height_cm: 269, max_weight_kg: 26460 },
+  { name: 'Semi-remorque 13.6m', length_cm: 1360, width_cm: 245, height_cm: 270, max_weight_kg: 24000, axle_rear_cm: 1160 },
+  { name: 'Porteur 7.7m',        length_cm: 770,  width_cm: 245, height_cm: 270, max_weight_kg: 11000, axle_rear_cm: 560  },
+  { name: 'Fourgon 20m³',        length_cm: 430,  width_cm: 210, height_cm: 220, max_weight_kg: 1200,  axle_rear_cm: 300  },
+  { name: "Container 20'",       length_cm: 590,  width_cm: 235, height_cm: 239, max_weight_kg: 21770, axle_rear_cm: 500  },
+  { name: "Container 40'",       length_cm: 1203, width_cm: 235, height_cm: 239, max_weight_kg: 26680, axle_rear_cm: 1020 },
+  { name: "Container 40' HC",    length_cm: 1203, width_cm: 235, height_cm: 269, max_weight_kg: 26460, axle_rear_cm: 1020 },
 ];
 
 const PALETTE_COLORS = [
@@ -709,7 +710,7 @@ ${truckSections}
               </div>
 
               {/* Visualization — all trucks stacked */}
-              <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-auto min-h-[300px] relative">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-auto min-h-[150px] relative">
                 {loading && (
                   <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-10 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
@@ -724,7 +725,7 @@ ${truckSections}
                         {getT(language)('results.truck')} {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} {getT(language)('results.palettes')} — {trk.totalWeight}kg
                       </div>
                     )}
-                    <div style={{ height: '500px' }}>
+                    <div style={{ height: viewMode === '3d' ? '450px' : 'auto' }}>
                       {viewMode === '2d' ? (
                         <Canvas2D
                           truck={truck}

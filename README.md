@@ -2,7 +2,7 @@
 
 Application web d'optimisation de chargement de palettes en camion. Calcule le placement optimal des palettes pour minimiser les mètres plancher utilisés grâce à l'algorithme MAXRECTS combiné au Simulated Annealing.
 
-![Easy Packing](https://img.shields.io/badge/version-1.1.0-blue) ![Node.js](https://img.shields.io/badge/node-%3E%3D18-green) ![License](https://img.shields.io/badge/license-private-lightgrey)
+![Easy Packing](https://img.shields.io/badge/version-1.2.0-blue) ![Node.js](https://img.shields.io/badge/node-%3E%3D18-green) ![License](https://img.shields.io/badge/license-private-lightgrey)
 
 ## Fonctionnalités
 
@@ -19,8 +19,10 @@ Application web d'optimisation de chargement de palettes en camion. Calcule le p
 - **Impression** — Export optimisé de tous les camions pour impression (plan de chargement complet)
 - **Multi-utilisateurs** — Authentification JWT, préférences et entité par utilisateur, avatar
 - **Internationalisation** — Interface disponible en 9 langues : 🇫🇷 Français, 🇬🇧 English, 🇪🇸 Español, 🇩🇪 Deutsch, 🇮🇹 Italiano, 🇳🇱 Nederlands, 🇵🇹 Português, 🇨🇳 中文, 🇷🇺 Русский
-- **Thème sombre / clair** — Bascule dark/light mode persistante par utilisateur
+- **Thème sombre / clair** — Bascule dark/light mode persistante par utilisateur ; fond du canvas 2D/3D adaptatif
 - **Responsive** — Interface adaptée mobile et desktop
+- **Visualisation essieux & CdG** — King pin, bogie et centre de gravité affichés sur la vue 2D avec répartition des poids pivot/bogie
+- **Indicateur d'équilibre** — CdG colorisé en vert / orange / rouge selon la qualité de l'équilibre de charge
 
 ## Prérequis
 
@@ -130,6 +132,22 @@ Le solveur fonctionne en 4 phases :
 - **Double-clic** → Sélectionne toutes les palettes de même taille
 - **Glisser** → Déplace toutes les palettes sélectionnées ensemble
 - **Relâcher** → Résolution de collisions (palettes déplacées replacées en blocs contigus)
+
+### Indicateurs de chargement (Vue 2D)
+
+| Symbole | Description |
+|---|---|
+| ▲ amber (x=0) | King pin (axe de pivot de la semi-remorque) |
+| ▲ amber (essieu arrière) | Bogie (position configurable dans TruckConfig) |
+| ▼ colorisé | Centre de gravité (CdG) de la charge |
+
+La couleur du CdG indique la qualité de l'équilibre :
+
+| Couleur | Ratio CdG/Bogie | Signification |
+|---|---|---|
+| 🟢 Vert | 0.30 – 0.55 | Équilibre optimal |
+| 🟠 Orange | 0.20 – 0.30 ou 0.55 – 0.70 | Acceptable, attention |
+| 🔴 Rouge | < 0.20 ou > 0.70 | Déséquilibre dangereux |
 
 ## Internationalisation
 

@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { useTheme } from '../ThemeContext';
 
 function Palette3D({ placement }) {
   const { x, y, placedWidth, placedHeight, color, ref, height, num } = placement;
@@ -130,6 +131,11 @@ export default function View3D({ truck, result, truckIndex }) {
   const l = truck.length_cm / 100;
   const w = truck.width_cm / 100;
   const controlsRef = useRef();
+  const { darkMode } = useTheme();
+
+  const canvasBg = darkMode
+    ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)'
+    : 'linear-gradient(180deg, #e0e7ff 0%, #f0f4f8 100%)';
 
   const zoomBtn = "w-8 h-8 flex items-center justify-center rounded-lg bg-white/90 shadow border border-gray-300 text-gray-700 hover:bg-gray-100 text-lg font-bold select-none cursor-pointer";
 
@@ -166,7 +172,7 @@ export default function View3D({ truck, result, truckIndex }) {
         shadows
         camera={{ position: [l * 0.7, 4, w + 5], fov: 45 }}
         gl={{ sortObjects: true, alpha: false }}
-        style={{ background: 'linear-gradient(180deg, #e0e7ff 0%, #f0f4f8 100%)' }}
+        style={{ background: canvasBg }}
       >
         <ambientLight intensity={0.5} />
         <directionalLight

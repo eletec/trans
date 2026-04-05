@@ -68,7 +68,7 @@ export default function ResultsPanel({ result }) {
         <summary className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
           <FileText className="w-4 h-4 inline -mt-0.5" /> {t('results.log')} ({log?.length || 0} {t('results.lines')})
         </summary>
-        <pre className="mt-2 bg-gray-900 text-green-400 p-3 rounded-lg overflow-auto max-h-[300px] font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+        <pre className="mt-2 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-green-400 p-3 rounded-lg overflow-auto max-h-[300px] font-mono text-[11px] leading-tight whitespace-pre-wrap">
 {log?.join('\n')}
         </pre>
       </details>

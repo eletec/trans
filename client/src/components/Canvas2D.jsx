@@ -1,15 +1,17 @@
 import React, { useRef, useEffect, useState, useCallback, useContext } from 'react';
 import { AppContext } from '../App';
+import { useTheme } from '../ThemeContext';
 
 export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, onDropPalettes }) {
   const { marker } = useContext(AppContext);
+  const { darkMode } = useTheme();
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [dragging, setDragging] = useState(null); // { indices, offsets[], startPositions[] }
   const [selected, setSelected] = useState(new Set());
   const [hovered, setHovered] = useState(null);
   const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 40, y: 40 });
+  const [offset, setOffset] = useState({ x: 16, y: 16 });
 
   const binW = truck.length_cm;
   const binH = truck.width_cm;
@@ -23,7 +25,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, on
     const container = containerRef.current;
     if (!container) return;
     const updateScale = () => {
-      const cw = container.clientWidth - 80;
+      const cw = container.clientWidth - 32;
       const s = Math.max(0.3, cw / binW);
       setScale(s);
     };
@@ -38,8 +40,8 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, on
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const w = binW * scale + 80;
-    const h = binH * scale + 80;
+    const w = binW * scale + 32;
+    const h = binH * scale + 52; // extra bottom space for axle + CoG labels
     canvas.width = w * window.devicePixelRatio;
     canvas.height = h * window.devicePixelRatio;
     canvas.style.width = w + 'px';
@@ -47,7 +49,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, on
     ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
 
     // Background
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = darkMode ? '#1e293b' : '#f8fafc';
     ctx.fillRect(0, 0, w, h);
 
     const ox = offset.x;
@@ -59,7 +61,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, on
     ctx.strokeRect(ox, oy, binW * scale, binH * scale);
 
     // Grid lines every 100cm (1m)
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = darkMode ? '#334155' : '#e2e8f0';
     ctx.lineWidth = 0.5;
     for (let x = 100; x < binW; x += 100) {
       ctx.beginPath();
@@ -84,7 +86,7 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, on
     }
 
     // Axis labels
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = darkMode ? '#94a3b8' : '#64748b';
     ctx.font = '10px sans-serif';
     for (let x = 0; x <= binW; x += 200) {
       ctx.fillText(`${(x / 100).toFixed(0)}m`, ox + x * scale - 4, oy - 8);
@@ -160,7 +162,111 @@ export default function Canvas2D({ truck, result, truckIndex, onDragPalettes, on
       ctx.fillText(`${truckData.floorMeters.toFixed(2)}m`, mx + 4, oy + 14);
     }
 
-  }, [placements, scale, offset, hovered, selected, truck, truckData, binW, binH, marker]);
+    // ── Axles & Centre de Gravité ──────────────────────────────────
+    const axleRear = truck.axle_rear_cm || Math.round(truck.length_cm * 0.855);
+    const ty = oy + binH * scale;
+
+    // Rear axle: dashed vertical line through cargo + small triangle tick below
+    if (axleRear > 0 && axleRear <= binW) {
+      const ax = ox + axleRear * scale;
+      ctx.strokeStyle = darkMode ? '#fbbf2450' : '#f59e0b50';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(ax, oy);
+      ctx.lineTo(ax, ty);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Tick triangle below truck
+      ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
+      ctx.beginPath();
+      ctx.moveTo(ax - 6, ty + 1);
+      ctx.lineTo(ax + 6, ty + 1);
+      ctx.lineTo(ax, ty + 11);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // King pin tick (front of trailer at x = 0)
+    ctx.fillStyle = darkMode ? '#fbbf24' : '#d97706';
+    ctx.beginPath();
+    ctx.moveTo(ox - 6, ty + 1);
+    ctx.lineTo(ox + 6, ty + 1);
+    ctx.lineTo(ox, ty + 11);
+    ctx.closePath();
+    ctx.fill();
+
+    // Centre de gravité
+    const cogPalettes = placements.filter(p => p.x >= 0 && p.x < 9999);
+    const loadWeight = cogPalettes.reduce((s, p) => s + (p.weight || 0), 0);
+    let cogX = null;
+    if (cogPalettes.length > 0) {
+      if (loadWeight > 0) {
+        cogX = cogPalettes.reduce((s, p) => s + (p.weight || 0) * (p.x + p.placedWidth / 2), 0) / loadWeight;
+      } else {
+        cogX = cogPalettes.reduce((s, p) => s + (p.x + p.placedWidth / 2), 0) / cogPalettes.length;
+      }
+    }
+
+    if (cogX !== null) {
+      const cx = ox + cogX * scale;
+      // Compute balance quality color
+      const cogRatio = axleRear > 0 ? cogX / axleRear : 0.5;
+      let cogColor, cogColorFaint;
+      if (cogRatio >= 0.30 && cogRatio <= 0.55) {
+        cogColor = darkMode ? '#4ade80' : '#16a34a';   // green — good balance
+        cogColorFaint = '#16a34a28';
+      } else if (cogRatio >= 0.20 && cogRatio <= 0.70) {
+        cogColor = darkMode ? '#fb923c' : '#ea580c';   // orange — acceptable
+        cogColorFaint = '#ea580c28';
+      } else {
+        cogColor = darkMode ? '#f87171' : '#dc2626';   // red — dangerous
+        cogColorFaint = '#dc262628';
+      }
+      // Light dashed CdG guideline
+      ctx.strokeStyle = cogColorFaint;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.moveTo(cx, oy);
+      ctx.lineTo(cx, ty);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // CdG inverted triangle (pointing down)
+      ctx.fillStyle = cogColor;
+      ctx.beginPath();
+      ctx.moveTo(cx - 8, ty + 1);
+      ctx.lineTo(cx + 8, ty + 1);
+      ctx.lineTo(cx, ty + 13);
+      ctx.closePath();
+      ctx.fill();
+      // CdG position label
+      ctx.font = 'bold 8px sans-serif';
+      ctx.fillStyle = cogColor;
+      ctx.textAlign = 'center';
+      ctx.fillText(`CdG ${(cogX / 100).toFixed(1)}m`, cx, ty + 26);
+      ctx.textAlign = 'left';
+
+      // Weight distribution (pivot / bogie)
+      if (loadWeight > 0 && axleRear > 0) {
+        const clampedCog = Math.max(0, Math.min(cogX, axleRear));
+        const wRear = Math.round(loadWeight * clampedCog / axleRear);
+        const wFront = loadWeight - wRear;
+        const pFront = Math.round(wFront / loadWeight * 100);
+        const pRear = 100 - pFront;
+        const lblColor = cogColor;
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = lblColor;
+        ctx.textAlign = 'left';
+        ctx.fillText(`Pivot  ${(wFront / 1000).toFixed(2)}t (${pFront}%)`, ox + 2, ty + 44);
+        if (axleRear <= binW) {
+          ctx.textAlign = 'right';
+          ctx.fillText(`Bogie  ${(wRear / 1000).toFixed(2)}t (${pRear}%)`, ox + axleRear * scale - 2, ty + 44);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
+
+  }, [placements, scale, offset, hovered, selected, truck, truckData, binW, binH, marker, darkMode]);
 
   // Mouse interactions for drag & drop
   const getCanvasPos = useCallback((e) => {

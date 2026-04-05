@@ -95,3 +95,17 @@ www/
 - 2026-04-02 : Frontend React complet (saisie, visualisation 2D/3D, drag&drop, projets)
 - 2026-04-02 : Test : 7/7 palettes placées en une passe (BestShortSideFit auto-sélectionné)
 - 2026-04-02 : Initial commit + push GitHub
+- 2026-04-03 : Internationalisation complète — 9 langues (fr/en/es/de/it/nl/pt/zh/ru), hook useT(), toutes les clés traduites
+- 2026-04-03 : Corrections design : fond du journal log (bg-gray-100 / dark:bg-gray-900 + leading-tight)
+- 2026-04-03 : Canvas2D + View3D : fond adaptatif dark/light mode (canvas background + grille + gradient 3D)
+- 2026-04-03 : Responsive mobile : marges Canvas2D réduites, hauteur viz auto en 2D / fixe 450px en 3D
+- 2026-04-04 : Visualisation essieux et centre de gravité sur Canvas2D :
+    · Champ `axle_rear_cm` ajouté à DEFAULT_TRUCK et 6 presets camion
+    · Input "Essieux arrière (cm)" dans TruckConfig (localisé 9 langues)
+    · Canvas2D : triangle roi (king pin, amber à x=0), triangle bogie (amber + ligne tiretée à axle_rear_cm)
+    · Centre de gravité (CdG) : triangle inversé + label "CdG X.Xm" + répartition des poids Pivot/Bogie
+- 2026-04-05 : Indicateur CdG colorisé selon l'équilibre de charge (feu tricolore) :
+    · Vert  (0.30 ≤ ratio ≤ 0.55) : charge bien équilibrée
+    · Orange (0.20–0.30 ou 0.55–0.70) : acceptable, attention requise
+    · Rouge  (< 0.20 ou > 0.70) : déséquilibre dangereux
+    · La couleur s'applique au triangle CdG, au trait de guidage, au label et aux textes de répartition

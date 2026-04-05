@@ -13,7 +13,7 @@ export default function TruckConfig() {
 
   const applyPreset = (name) => {
     const p = TRUCK_PRESETS.find(t => t.name === name);
-    if (p) setTruck({ length_cm: p.length_cm, width_cm: p.width_cm, height_cm: p.height_cm, max_weight_kg: p.max_weight_kg });
+    if (p) setTruck({ length_cm: p.length_cm, width_cm: p.width_cm, height_cm: p.height_cm, max_weight_kg: p.max_weight_kg, axle_rear_cm: p.axle_rear_cm });
   };
 
   return (
@@ -67,6 +67,15 @@ export default function TruckConfig() {
             type="number"
             value={truck.max_weight_kg}
             onChange={e => update('max_weight_kg', e.target.value)}
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('truck.axleRear')}</label>
+          <input
+            type="number"
+            value={truck.axle_rear_cm || Math.round(truck.length_cm * 0.855)}
+            onChange={e => update('axle_rear_cm', e.target.value)}
             className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
