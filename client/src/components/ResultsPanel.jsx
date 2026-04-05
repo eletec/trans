@@ -23,7 +23,7 @@ export default function ResultsPanel({ result, truck }) {
   }, 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 max-h-[300px] overflow-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 flex flex-col flex-1 min-h-0 overflow-hidden">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5"><ClipboardList className="w-4 h-4" /> {t('results.title')}</h3>
 
       {/* Summary bar */}
@@ -95,11 +95,11 @@ export default function ResultsPanel({ result, truck }) {
       )}
 
       {/* Log — matching original format */}
-      <details open className="text-xs">
+      <details open className="text-xs flex flex-col min-h-0 flex-1">
         <summary className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium">
           <FileText className="w-4 h-4 inline -mt-0.5" /> {t('results.log')} ({log?.length || 0} {t('results.lines')})
         </summary>
-        <pre className="mt-2 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-green-400 p-3 rounded-lg overflow-auto max-h-[300px] font-mono text-[11px] leading-tight whitespace-pre-wrap">
+        <pre className="mt-2 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-green-400 p-3 rounded-lg overflow-auto flex-1 min-h-[140px] font-mono text-[11px] leading-tight whitespace-pre-wrap">
 {log?.join('\n')}
         </pre>
       </details>

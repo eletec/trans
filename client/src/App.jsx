@@ -525,6 +525,12 @@ export default function App() {
   const handlePrint = () => {
     if (!result || !result.trucks) return;
     const tp = getT(language);
+    const is3D = result.packingDimension && result.packingDimension !== '2d';
+    const packingModeLabel = result.packingDimension === '3d-cuboid'
+      ? tp('result.packing.3dCuboid')
+      : result.packingDimension === '3d'
+        ? tp('result.packing.3d')
+        : tp('result.packing.2d');
 
     // Gather all 2D canvas images (one per truck rendered in the DOM)
     const canvases = document.querySelectorAll('canvas');
@@ -534,17 +540,24 @@ export default function App() {
 
     // Build per-truck sections
     const truckSections = result.trucks.map((truckData, tIdx) => {
-      const paletteRows = truckData.placements.map((p, i) =>
-        `<tr>
+      const paletteRows = truckData.placements.map((p, i) => {
+        const heightMm = p.height || 1500;
+        const dimsText = is3D
+          ? `${p.placedWidth * 10} × ${p.placedHeight * 10} × ${heightMm}`
+          : `${p.placedWidth * 10} × ${p.placedHeight * 10}`;
+        const posText = is3D
+          ? `(${p.x}, ${p.y}, ${p.z || 0})`
+          : `(${p.x}, ${p.y})`;
+        return `<tr>
           <td>#${p.num || (i + 1)}</td>
           <td>${p.ref || '-'}</td>
           <td style="width:20px;height:14px;background:${p.color || '#ccc'};border:1px solid #999"></td>
-          <td>${p.placedWidth * 10} × ${p.placedHeight * 10}</td>
+          <td>${dimsText}</td>
           <td>${p.weight || '-'}</td>
-          <td>(${p.x}, ${p.y})</td>
+          <td>${posText}</td>
           <td>${p.rotated ? tp('print.rotated.yes') : tp('print.rotated.no')}</td>
-        </tr>`
-      ).join('');
+        </tr>`;
+      }).join('');
 
       const imgSrc = canvasImages[tIdx] || '';
       return `
@@ -601,7 +614,8 @@ export default function App() {
   </div>
   <div class="header-right">
     ${new Date().toLocaleString('fr-FR')}<br>
-    ${result.trucks.length} ${tp('result.trucks')}
+    ${result.trucks.length} ${tp('result.trucks')}<br>
+    ${tp('result.packing')} ${packingModeLabel}
   </div>
 </div>
 
@@ -673,7 +687,7 @@ ${truckSections}
         {user && (
           <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 h-full">
             {/* Left panel: data entry */}
-            <div className="w-full lg:w-[420px] flex flex-col gap-2 sm:gap-4 shrink-0">
+            <div className="w-full lg:w-[520px] flex flex-col gap-2 sm:gap-4 shrink-0">
               <TruckConfig />
               <PaletteGrid />
               <div className="flex items-center gap-2 text-xs sm:text-sm">
@@ -764,7 +778,7 @@ ${truckSections}
             </div>
 
             {/* Right panel: visualization + results */}
-            <div className="flex-1 flex flex-col gap-2 sm:gap-4 min-w-0">
+            <div className="flex-1 flex flex-col gap-2 sm:gap-4 min-w-0 min-h-0">
               {/* View toggle */}
               <div className="flex items-center gap-2 flex-wrap">
                 <button

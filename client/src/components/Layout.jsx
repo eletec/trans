@@ -14,7 +14,7 @@ export default function Layout({ children }) {
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
       {/* Header */}
       <header className="shrink-0 sticky top-0 z-40 bg-gradient-to-r from-blue-800 to-blue-600 dark:from-gray-800 dark:to-gray-700 text-white shadow-lg">
-        <div className="max-w-[1800px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Truck className="w-7 h-7 shrink-0" />
             <div className="hidden sm:block">
@@ -118,7 +118,7 @@ export default function Layout({ children }) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 min-h-0 overflow-auto max-w-[1800px] mx-auto w-full p-2 sm:p-4">
+      <main className="flex-1 min-h-0 overflow-auto w-full p-2 sm:p-4">
         {children}
       </main>
 
