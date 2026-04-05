@@ -10,6 +10,28 @@
  */
 const MaxRectsBinPack = require('./maxrects');
 
+function _groupContiguous3D(items) {
+  const order = [];
+  const groups = new Map();
+
+  for (const p of items) {
+    const l = Math.max(p.length, p.width);
+    const w = Math.min(p.length, p.width);
+    const h = p.height || 1500;
+    const key = `${l}x${w}x${h}`;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key).push(p);
+  }
+
+  const out = [];
+  for (const key of order) out.push(...groups.get(key));
+  return out;
+}
+
 function _isBetterScore(a, b) {
   return a.placed > b.placed ||
     (a.placed === b.placed && a.trucks < b.trucks) ||
@@ -270,6 +292,7 @@ function solve3D(params) {
     heuristic = 'auto',
     mode = 'calculate',
     allowRotation = true,
+    groupContiguous = true,
     maxTrucks = 10,
     heuristics = []
   } = params;
@@ -294,7 +317,8 @@ function solve3D(params) {
 
   for (const h of heuristicsToRun) {
     for (const sortFn of sortStrategies) {
-      const ordered = [...palettes].sort(sortFn);
+      const orderedBase = [...palettes].sort(sortFn);
+      const ordered = groupContiguous ? _groupContiguous3D(orderedBase) : orderedBase;
       const result = _pack3DMultiTruck(ordered, truck, h, allowRotation, maxTrucks);
       const score = _score(result);
       if (!bestResult || _isBetterScore(score, bestScore)) {

@@ -15,6 +15,28 @@ const EPS = 1e-6;
 const MIN_SUPPORT_RATIO = 0.78;
 const MIN_SUPPORTED_CORNERS = 3;
 
+function _groupContiguous3D(items) {
+  const order = [];
+  const groups = new Map();
+
+  for (const p of items) {
+    const l = Math.max(p.length, p.width);
+    const w = Math.min(p.length, p.width);
+    const h = p.height || 1500;
+    const key = `${l}x${w}x${h}`;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key).push(p);
+  }
+
+  const out = [];
+  for (const key of order) out.push(...groups.get(key));
+  return out;
+}
+
 function _almostEq(a, b) {
   return Math.abs(a - b) <= EPS;
 }
@@ -599,6 +621,7 @@ function solve3DCuboid(params) {
     heuristic = 'auto',
     mode = 'calculate',
     allowRotation = true,
+    groupContiguous = true,
     maxTrucks = 10,
     heuristics = []
   } = params;
@@ -622,7 +645,8 @@ function solve3DCuboid(params) {
 
   for (const h of heuristicsToRun) {
     for (const sortFn of sortStrategies) {
-      const ordered = [...palettes].sort(sortFn);
+      const orderedBase = [...palettes].sort(sortFn);
+      const ordered = groupContiguous ? _groupContiguous3D(orderedBase) : orderedBase;
       const result = _packMultiTruckCuboid(ordered, truck, h, allowRotation, maxTrucks);
       const score = {
         placed: result.totalPlaced,

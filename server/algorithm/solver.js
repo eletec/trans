@@ -138,6 +138,7 @@ function solve(params) {
       heuristic,
       mode,
       allowRotation,
+      groupContiguous,
       maxTrucks,
       heuristics: HEURISTICS
     });
@@ -155,6 +156,7 @@ function solve(params) {
       heuristic,
       mode,
       allowRotation,
+      groupContiguous,
       maxTrucks,
       heuristics: HEURISTICS
     });
