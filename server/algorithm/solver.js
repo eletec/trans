@@ -4,6 +4,7 @@
  */
 const MaxRectsBinPack = require('./maxrects');
 const { groupPalettes } = require('./grouping');
+const { solve3D } = require('./solver3d');
 
 const HEURISTICS = [
   'BestShortSideFit',
@@ -12,6 +13,7 @@ const HEURISTICS = [
   'BottomLeftRule',
   'ContactPointRule'
 ];
+const SOLVER_ALGO_REV = '2026-04-05-3d-v2';
 
 // --- Cache system ---
 const cache = new Map();
@@ -22,7 +24,7 @@ function _cacheKey(params) {
     `${p.ref}:${p.length}x${p.width}x${p.height || 0}:${p.weight || 0}:${p.quantity || 1}:${p.color || ''}`
   ).join('|');
   const truckSig = `${params.truck.length_cm}x${params.truck.width_cm}x${params.truck.height_cm || 0}:${params.truck.max_weight_kg || 0}`;
-  return `${paletteSig}__${truckSig}__${params.heuristic}__${params.allowRotation}__${params.groupContiguous}__${params.maxTrucks}__${params.mode || 'calculate'}__${params.iterations || 0}`;
+  return `${SOLVER_ALGO_REV}__${paletteSig}__${truckSig}__${params.heuristic}__${params.allowRotation}__${params.groupContiguous}__${params.maxTrucks}__${params.mode || 'calculate'}__${params.packingDimension || '2d'}__${params.iterations || 0}`;
 }
 
 function _cacheGet(key) {
@@ -56,6 +58,7 @@ function _cacheSet(key, result) {
  * @param {Object} params.truck - {length_cm, width_cm, height_cm, max_weight_kg}
  * @param {string} params.heuristic - 'auto' or specific heuristic name
  * @param {string} params.mode - 'preview' | 'calculate' | 'simulation'
+ * @param {string} params.packingDimension - '2d' | '3d'
  * @param {number} params.iterations - number of random iterations for simulation mode (default 0 = deterministic)
  * @param {boolean} params.allowRotation - allow 90° rotation (default true)
  * @param {boolean} params.groupContiguous - group identical palettes (default true)
@@ -68,6 +71,7 @@ function solve(params) {
     truck,
     heuristic = 'auto',
     mode = 'calculate',
+    packingDimension = '2d',
     iterations = 0,
     allowRotation = true,
     groupContiguous = true,
@@ -98,6 +102,7 @@ function solve(params) {
         width: p.width / 10,
         height: p.height || 1500,
         weight: p.weight || 0,
+        stackable: p.stackable !== false,
         color: p.color || '#cccccc',
         comment: p.comment || '',
         originalIndex: expandedPalettes.length,
@@ -121,6 +126,25 @@ function solve(params) {
         expandedPalettes.push(item);
       }
     }
+  }
+
+  // 3D packing is intentionally routed to a separate algorithm so we can keep
+  // the 2D MAXRECTS pipeline stable and backward compatible.
+  if (packingDimension === '3d') {
+    const result3d = solve3D({
+      palettes: expandedPalettes,
+      truck,
+      heuristic,
+      mode,
+      allowRotation,
+      maxTrucks,
+      heuristics: HEURISTICS
+    });
+    result3d.totalPalettes = totalPalettes;
+    result3d.fromCache = false;
+    result3d.packingDimension = '3d';
+    _cacheSet(cKey, result3d);
+    return result3d;
   }
 
   let bestResult = null;
@@ -445,6 +469,7 @@ function solve(params) {
 
   bestResult.totalPalettes = totalPalettes;
   bestResult.fromCache = false;
+  bestResult.packingDimension = '2d';
 
   _cacheSet(cKey, bestResult);
 

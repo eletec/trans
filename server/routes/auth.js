@@ -22,6 +22,7 @@ const DEFAULT_ENTITY_SETTINGS = {
   groupContiguous: true,
   maxTrucks: 5,
   calcMode: 'calculate',
+  packingDimension: '2d',
   marker: 800,
 };
 

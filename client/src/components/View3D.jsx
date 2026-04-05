@@ -5,9 +5,10 @@ import * as THREE from 'three';
 import { useTheme } from '../ThemeContext';
 
 function Palette3D({ placement }) {
-  const { x, y, placedWidth, placedHeight, color, ref, height, num } = placement;
+  const { x, y, placedWidth, placedHeight, color, ref, height, num, z } = placement;
   const h3d = (height || 1500) / 10 / 100; // mm -> m
   const px = (x + placedWidth / 2) / 100;
+  const py = (z || 0) / 100 + h3d / 2;
   const pz = (y + placedHeight / 2) / 100;
   const pw = placedWidth / 100;
   const pd = placedHeight / 100;
@@ -16,7 +17,7 @@ function Palette3D({ placement }) {
   const topRotZ = pd > pw ? Math.PI / 2 : 0;
 
   return (
-    <group position={[px, h3d / 2, pz]}>
+    <group position={[px, py, pz]}>
       {/* Solid opaque box — no transparency avoids z-order issues */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[pw, h3d, pd]} />

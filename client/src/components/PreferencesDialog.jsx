@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Settings } from 'lucide-react';
 import { AppContext } from '../App';
 import { useT } from '../i18n';
+import { api } from '../api/client';
 
 export default function PreferencesDialog() {
   const {
@@ -11,6 +12,7 @@ export default function PreferencesDialog() {
     maxTrucks, setMaxTrucks,
     iterations, setIterations,
     calcMode, setCalcMode,
+    packingDimension, setPackingDimension,
     truck, setTruck,
     marker, setMarker,
     TRUCK_PRESETS
@@ -22,8 +24,21 @@ export default function PreferencesDialog() {
   };
   const t = useT();
 
+  const closeAndPersist = () => {
+    api.savePreferences({
+      heuristic,
+      allowRotation,
+      groupContiguous,
+      maxTrucks,
+      calcMode,
+      packingDimension,
+      marker,
+    }).catch(() => {});
+    setShowPrefs(false);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowPrefs(false)}>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={closeAndPersist}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2"><Settings className="w-5 h-5" /> {t('prefs.title')}</h2>
 
@@ -57,6 +72,18 @@ export default function PreferencesDialog() {
                 >
                   <option value="preview">{t('prefs.calcMode.preview')}</option>
                   <option value="calculate">{t('prefs.calcMode.calculate')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('prefs.packingDimension')}</label>
+                <select
+                  value={packingDimension}
+                  onChange={e => setPackingDimension(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="2d">{t('prefs.packingDimension.2d')}</option>
+                  <option value="3d">{t('prefs.packingDimension.3d')}</option>
                 </select>
               </div>
 
@@ -129,13 +156,13 @@ export default function PreferencesDialog() {
 
         <div className="flex gap-2 mt-6">
           <button
-            onClick={() => setShowPrefs(false)}
+            onClick={closeAndPersist}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors"
           >
             {t('btn.apply')}
           </button>
           <button
-            onClick={() => setShowPrefs(false)}
+            onClick={closeAndPersist}
             className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold py-2.5 rounded-lg transition-colors"
           >
             {t('btn.close')}

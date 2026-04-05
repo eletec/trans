@@ -4,10 +4,19 @@ import { AppContext } from '../App';
 import { useT } from '../i18n';
 
 export default function PaletteGrid() {
-  const { palettes, addPalette, updatePalette, removePalette, paletteTemplates, PALETTE_COLORS } = useContext(AppContext);
+  const { palettes, addPalette, updatePalette, removePalette, paletteTemplates, truck, packingDimension } = useContext(AppContext);
   const [quickTpl, setQuickTpl] = useState('');
   const [quickQty, setQuickQty] = useState(1);
   const t = useT();
+
+  const truckHeightMm = (truck?.height_cm || 0) * 10;
+  const tooTallQty = palettes.reduce((sum, p) => {
+    const qty = p.quantity || 1;
+    const h = p.height || 0;
+    // Only stackable items are expected to use upper layers.
+    if (p.stackable !== false && h > 0 && (h * 2) > truckHeightMm) return sum + qty;
+    return sum;
+  }, 0);
 
   const applyTemplate = (index, templateName) => {
     const tpl = paletteTemplates.find(t => t.name === templateName);
@@ -73,6 +82,7 @@ export default function PaletteGrid() {
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.width')}</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.height')}</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.weight')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.stackable')}</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.qty')}</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.color')}</th>
               <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.note')}</th>
@@ -129,6 +139,15 @@ export default function PaletteGrid() {
                     className="w-14 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
+                <td className="px-1 py-1 text-center">
+                  <input
+                    type="checkbox"
+                    checked={p.stackable !== false}
+                    onChange={e => updatePalette(i, 'stackable', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded"
+                    title={t('palettes.stackableHint')}
+                  />
+                </td>
                 <td className="px-1 py-1">
                   <input
                     type="number" value={p.quantity} min={1}
@@ -164,7 +183,7 @@ export default function PaletteGrid() {
             ))}
             {palettes.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center py-8 text-gray-400 text-sm">
+                <td colSpan={11} className="text-center py-8 text-gray-400 text-sm">
                   {t('palettes.empty')}
                 </td>
               </tr>
@@ -178,6 +197,12 @@ export default function PaletteGrid() {
           <span>{t('palettes.total')} <strong>{palettes.reduce((s, p) => s + (p.quantity || 1), 0)}</strong> {t('palettes.totalUnit')}</span>
           <span>{t('palettes.weightLabel')} <strong>{palettes.reduce((s, p) => s + (p.weight || 0) * (p.quantity || 1), 0)}</strong> kg</span>
           <span>{t('palettes.surface')} <strong>{(palettes.reduce((s, p) => s + (p.length * p.width / 1000000) * (p.quantity || 1), 0)).toFixed(2)}</strong> m²</span>
+        </div>
+      )}
+
+      {packingDimension === '3d' && palettes.length > 0 && (
+        <div className={`mt-2 text-xs rounded-lg px-2 py-1.5 ${tooTallQty > 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'}`}>
+          {t('palettes.stackRule')} ({truckHeightMm} mm) - {tooTallQty} {t('palettes.tooTall')}
         </div>
       )}
     </div>

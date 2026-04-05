@@ -6,7 +6,7 @@ import { useT } from '../i18n';
 
 export default function HistoryDialog() {
   const { setShowHistory, setTruck, setPalettes, setResult, setHeuristic,
-    setAllowRotation, setGroupContiguous, setMaxTrucks, setCalcMode, setIterations, setMarker, setPaletteTemplates } = useContext(AppContext);
+    setAllowRotation, setGroupContiguous, setMaxTrucks, setCalcMode, setPackingDimension, setIterations, setMarker, setPaletteTemplates } = useContext(AppContext);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +38,7 @@ export default function HistoryDialog() {
       if (s.groupContiguous !== undefined) setGroupContiguous(s.groupContiguous);
       if (s.maxTrucks !== undefined) setMaxTrucks(s.maxTrucks);
       if (s.calcMode) setCalcMode(s.calcMode);
+      if (s.packingDimension) setPackingDimension(s.packingDimension);
       if (s.iterations !== undefined) setIterations(s.iterations);
       if (s.marker !== undefined) setMarker(s.marker);
       if (s.paletteTemplates) setPaletteTemplates(s.paletteTemplates);

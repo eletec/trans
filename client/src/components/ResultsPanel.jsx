@@ -2,18 +2,32 @@ import React from 'react';
 import { ClipboardList, FileText, AlertTriangle } from 'lucide-react';
 import { useT } from '../i18n';
 
-export default function ResultsPanel({ result }) {
+export default function ResultsPanel({ result, truck }) {
   const t = useT();
   if (!result) return null;
 
-  const { trucks, totalPlaced, totalPalettes, unplaced, log, heuristic } = result;
+  const { trucks, totalPlaced, totalPalettes, unplaced, log } = result;
+  const is3D = result.packingDimension === '3d';
+  const truckHeightMm = (truck?.height_cm || 0) * 10;
+  const allPalettes = [
+    ...(trucks || []).flatMap(trk => trk.placements || []),
+    ...(unplaced || [])
+  ];
+  const stackableByHeightCount = allPalettes.filter(p => (p.stackable !== false) && ((p.height || 0) * 2 <= truckHeightMm)).length;
+  const stackedCount = (trucks || []).reduce((sum, trk) => {
+    return sum + (trk.placements || []).filter(p => (p.z || 0) > 0).length;
+  }, 0);
+  const maxLayers = (trucks || []).reduce((mx, trk) => {
+    const inferred = new Set((trk.placements || []).map(p => p.z || 0)).size || 1;
+    return Math.max(mx, trk.layers || inferred);
+  }, 0);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 max-h-[300px] overflow-auto">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5"><ClipboardList className="w-4 h-4" /> {t('results.title')}</h3>
 
       {/* Summary bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+      <div className={`grid grid-cols-2 ${is3D ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3 mb-3`}>
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 text-center">
           <div className="text-lg font-bold text-blue-700 dark:text-blue-400">{totalPlaced}/{totalPalettes}</div>
           <div className="text-xs text-blue-500 dark:text-blue-400">{t('results.placed')}</div>
@@ -34,7 +48,23 @@ export default function ResultsPanel({ result }) {
           </div>
           <div className="text-xs text-amber-500 dark:text-amber-400">{t('results.totalWeight')}</div>
         </div>
+        {is3D && (
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-2 text-center">
+            <div className="text-lg font-bold text-indigo-700 dark:text-indigo-400">{maxLayers}</div>
+            <div className="text-xs text-indigo-500 dark:text-indigo-400">couche(s)</div>
+          </div>
+        )}
       </div>
+
+      {is3D && (
+        <div className={`rounded-lg p-2 mb-3 text-xs ${stackedCount > 0 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'}`}>
+          {stackedCount > 0
+            ? `Mode 3D actif: ${stackedCount} palette(s) empilée(s).`
+            : (stackableByHeightCount === 0
+              ? `Mode 3D actif mais aucune palette empilable en hauteur (2xH palette > H camion ${truckHeightMm} mm).`
+              : "Mode 3D actif mais aucune palette n'a ete empilee pour ce calcul (plancher suffisant ou contraintes empilable).")}
+        </div>
+      )}
 
       {/* Per-truck summary */}
       {trucks && trucks.length > 0 && (
@@ -45,6 +75,7 @@ export default function ResultsPanel({ result }) {
               <span>{trk.placements.length} {t('results.palettes')}</span>
               <span>{trk.floorMeters?.toFixed(2)}{t('results.floor')}</span>
               <span>{trk.totalWeight}kg</span>
+              {is3D && <span>{trk.layers || new Set((trk.placements || []).map(p => p.z || 0)).size || 1} couche(s)</span>}
               <span className="ml-auto">{(trk.occupancy * 100).toFixed(1)}{t('results.occupied')}</span>
             </div>
           ))}

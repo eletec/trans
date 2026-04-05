@@ -12,7 +12,7 @@ Calcul d'encombrement de palettes dans un ou plusieurs camions avec visualisatio
 - **Visualisation 2D** : Canvas HTML5 avec drag & drop
 - **Visualisation 3D** : Three.js
 - **Auth** : JWT + bcrypt
-- **Algorithme** : MAXRECTS amélioré (Deterministic Best-Fit Decreasing + Multi-Heuristic)
+- **Algorithme** : MAXRECTS amélioré + mode 3D stacking (layered) expérimental
 
 ## Architecture
 ```
@@ -29,6 +29,7 @@ www/
 │   └── algorithm/
 │       ├── maxrects.js   # MAXRECTS bin packing porté en JS
 │       ├── solver.js     # Orchestrateur multi-heuristique + multi-camion
+│       ├── solver3d.js   # Solveur 3D stacking (couches)
 │       └── grouping.js   # Groupement palettes identiques
 ├── client/              # Frontend React
 │   ├── src/
@@ -109,3 +110,13 @@ www/
     · Orange (0.20–0.30 ou 0.55–0.70) : acceptable, attention requise
     · Rouge  (< 0.20 ou > 0.70) : déséquilibre dangereux
     · La couleur s'applique au triangle CdG, au trait de guidage, au label et aux textes de répartition
+- 2026-04-05 : Mode de remplissage configurable (2D / 3D stacking) avec persistance utilisateur/projet/historique
+- 2026-04-05 : Solveur 3D stacking (layered) implémenté côté backend (`packingDimension = 3d`)
+- 2026-04-05 : Règle métier palette `empilable` ajoutée (active uniquement en 3D)
+    · `empilable = non` -> palette forcée au sol (z=0)
+    · son empreinte au sol devient zone interdite dans les couches supérieures
+- 2026-04-05 : UI d'aide ajoutée pour éviter les confusions 2D/3D
+    · indicateur explicite du mode de remplissage actif
+    · message si vue 3D affichée avec calcul 2D
+    · message de faisabilité empilage selon hauteur palette / hauteur camion
+- 2026-04-05 : Header/top menu passé en sticky avec zone principale scrollable

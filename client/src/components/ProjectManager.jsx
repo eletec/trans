@@ -7,6 +7,7 @@ import { useT } from '../i18n';
 export default function ProjectManager() {
   const { setShowProjects, palettes, truck, heuristic, result, handleLoadProject,
     allowRotation, groupContiguous, maxTrucks, calcMode, iterations, marker,
+    packingDimension,
     paletteTemplates, currentProjectId, setCurrentProjectId, currentProjectName, setCurrentProjectName } = useContext(AppContext);
   const [projects, setProjects] = useState([]);
   const [newName, setNewName] = useState('');
@@ -40,6 +41,7 @@ export default function ProjectManager() {
       groupContiguous,
       maxTrucks,
       calcMode,
+      packingDimension,
       iterations,
       marker,
       paletteTemplates

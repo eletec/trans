@@ -5,7 +5,7 @@ const router = express.Router();
 
 // POST /api/calculate
 router.post('/', (req, res) => {
-  const { palettes, truck, heuristic, mode, iterations, allowRotation, groupContiguous, maxTrucks } = req.body;
+  const { palettes, truck, heuristic, mode, packingDimension, iterations, allowRotation, groupContiguous, maxTrucks } = req.body;
 
   if (!palettes || !Array.isArray(palettes) || palettes.length === 0) {
     return res.status(400).json({ error: 'Tableau palettes requis et non vide' });
@@ -20,6 +20,7 @@ router.post('/', (req, res) => {
       truck,
       heuristic: heuristic || 'auto',
       mode: mode || 'calculate',
+      packingDimension: packingDimension || '2d',
       iterations: parseInt(iterations) || 0,
       allowRotation: allowRotation !== false,
       groupContiguous: groupContiguous !== false,
