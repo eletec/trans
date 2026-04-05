@@ -11,7 +11,7 @@ export default function Layout({ children }) {
   const t = useT();
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
+    <div className="w-screen h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
       {/* Header */}
       <header className="shrink-0 sticky top-0 z-40 bg-gradient-to-r from-blue-800 to-blue-600 dark:from-gray-800 dark:to-gray-700 text-white shadow-lg">
         <div className="w-full px-4 py-3 flex items-center justify-between">
@@ -118,7 +118,7 @@ export default function Layout({ children }) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 min-h-0 overflow-auto w-full p-2 sm:p-4">
+      <main className="flex-1 min-h-0 overflow-auto w-full px-0 py-2 sm:py-4">
         {children}
       </main>
 
