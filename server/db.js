@@ -8,12 +8,21 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS entities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    settings TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT DEFAULT 'user',
+    entity_id INTEGER REFERENCES entities(id) ON DELETE SET NULL,
+    avatar TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -41,6 +50,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    entity_id INTEGER REFERENCES entities(id) ON DELETE CASCADE,
     truck_config TEXT,
     palette_data TEXT,
     result_data TEXT,
@@ -48,6 +58,23 @@ db.exec(`
     heuristic TEXT DEFAULT 'auto',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS calculation_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    entity_id INTEGER REFERENCES entities(id) ON DELETE CASCADE,
+    project_name TEXT,
+    truck_config TEXT,
+    palette_data TEXT,
+    result_data TEXT,
+    settings TEXT,
+    heuristic TEXT,
+    floor_meters REAL,
+    total_palettes INTEGER,
+    total_placed INTEGER,
+    num_trucks INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
@@ -63,6 +90,27 @@ try {
   db.prepare("SELECT preferences FROM users LIMIT 1").get();
 } catch (e) {
   db.exec("ALTER TABLE users ADD COLUMN preferences TEXT");
+}
+
+// Migration: add entity_id column to users table
+try {
+  db.prepare("SELECT entity_id FROM users LIMIT 1").get();
+} catch (e) {
+  db.exec("ALTER TABLE users ADD COLUMN entity_id INTEGER REFERENCES entities(id) ON DELETE SET NULL");
+}
+
+// Migration: add avatar column to users table
+try {
+  db.prepare("SELECT avatar FROM users LIMIT 1").get();
+} catch (e) {
+  db.exec("ALTER TABLE users ADD COLUMN avatar TEXT");
+}
+
+// Migration: add entity_id column to projects table
+try {
+  db.prepare("SELECT entity_id FROM projects LIMIT 1").get();
+} catch (e) {
+  db.exec("ALTER TABLE projects ADD COLUMN entity_id INTEGER REFERENCES entities(id) ON DELETE CASCADE");
 }
 
 // Insert default palette templates if none exist

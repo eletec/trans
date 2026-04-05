@@ -9,8 +9,11 @@ import ResultsPanel from './components/ResultsPanel';
 import PreferencesDialog from './components/PreferencesDialog';
 import ProjectManager from './components/ProjectManager';
 import PaletteConfigDialog from './components/PaletteConfigDialog';
+import HistoryDialog from './components/HistoryDialog';
+import ExportDialog from './components/ExportDialog';
 import { Eye, Truck, RotateCcw, Trash2, Save, Loader2, Zap, Printer } from 'lucide-react';
 import { api } from './api/client';
+import { getT } from './i18n';
 
 export const AppContext = createContext();
 
@@ -256,6 +259,8 @@ export default function App() {
   const [showPrefs, setShowPrefs] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [showPaletteConfig, setShowPaletteConfig] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectName, setCurrentProjectName] = useState('');
   const [saveFlash, setSaveFlash] = useState(false);
@@ -351,7 +356,7 @@ export default function App() {
   };
 
   const handleCalculate = async (modeOverride) => {
-    if (palettes.length === 0) { setError('Ajoutez au moins une palette'); return; }
+    if (palettes.length === 0) { setError(getT(language)('error.addPalette')); return; }
     const useMode = modeOverride || calcMode;
     setLoading(true);
     setError('');
@@ -368,6 +373,18 @@ export default function App() {
       });
       setResult(data.result);
       setActiveTruckIndex(0);
+
+      // Auto-save to history
+      try {
+        await api.saveHistory({
+          projectName: currentProjectName || 'Calcul',
+          truckConfig: truck,
+          paletteData: palettes,
+          resultData: data.result,
+          settings: { allowRotation, groupContiguous, maxTrucks, calcMode: useMode, iterations, marker, paletteTemplates },
+          heuristic: data.result?.heuristic || heuristic,
+        });
+      } catch (_) { /* history save is optional */ }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -445,12 +462,13 @@ export default function App() {
       setSaveFlash(true);
       setTimeout(() => setSaveFlash(false), 1500);
     } catch (e) {
-      setError('Erreur sauvegarde: ' + e.message);
+      setError(getT(language)('error.save') + ' ' + e.message);
     }
   };
 
   const handlePrint = () => {
     if (!result || !result.trucks) return;
+    const tp = getT(language);
 
     // Gather all 2D canvas images (one per truck rendered in the DOM)
     const canvases = document.querySelectorAll('canvas');
@@ -468,36 +486,36 @@ export default function App() {
           <td>${p.placedWidth * 10} × ${p.placedHeight * 10}</td>
           <td>${p.weight || '-'}</td>
           <td>(${p.x}, ${p.y})</td>
-          <td>${p.rotated ? 'Oui' : 'Non'}</td>
+          <td>${p.rotated ? tp('print.rotated.yes') : tp('print.rotated.no')}</td>
         </tr>`
       ).join('');
 
       const imgSrc = canvasImages[tIdx] || '';
       return `
-<h2>Camion ${tIdx + 1} — ${truckData.floorMeters?.toFixed(2)}m — ${truckData.placements.length} palette(s) — ${truckData.totalWeight}kg — ${(truckData.occupancy * 100).toFixed(1)}%</h2>
+<h2>${tp('results.truck')} ${tIdx + 1} — ${truckData.floorMeters?.toFixed(2)}m — ${truckData.placements.length} ${tp('results.palettes')} — ${truckData.totalWeight}kg — ${(truckData.occupancy * 100).toFixed(1)}%</h2>
 <div class="plan-img">
-  ${imgSrc ? `<img src="${imgSrc}" />` : '<p>Vue non disponible</p>'}
+  ${imgSrc ? `<img src="${imgSrc}" />` : `<p>${tp('print.noView')}</p>`}
 </div>
 <table>
-  <thead><tr><th>#</th><th>Réf</th><th>Couleur</th><th>Dimensions (mm)</th><th>Poids (kg)</th><th>Position (cm)</th><th>Pivoté</th></tr></thead>
+  <thead><tr><th>${tp('print.col.num')}</th><th>${tp('print.col.ref')}</th><th>${tp('print.col.color')}</th><th>${tp('print.col.dims')}</th><th>${tp('print.col.weightKg')}</th><th>${tp('print.col.pos')}</th><th>${tp('print.col.rotated')}</th></tr></thead>
   <tbody>${paletteRows}</tbody>
 </table>`;
     }).join('\n<div style="page-break-before:always"></div>\n');
 
     // Multi-truck summary
-    const truckSummaryRows = result.trucks.map((t, i) =>
+    const truckSummaryRows = result.trucks.map((trk, i) =>
       `<tr>
-        <td><strong>Camion ${i + 1}</strong></td>
-        <td>${t.placements.length} palettes</td>
-        <td>${t.floorMeters?.toFixed(2)}m</td>
-        <td>${t.totalWeight}kg</td>
-        <td>${(t.occupancy * 100).toFixed(1)}%</td>
+        <td><strong>${tp('results.truck')} ${i + 1}</strong></td>
+        <td>${trk.placements.length} ${tp('results.palettes')}</td>
+        <td>${trk.floorMeters?.toFixed(2)}m</td>
+        <td>${trk.totalWeight}kg</td>
+        <td>${(trk.occupancy * 100).toFixed(1)}%</td>
       </tr>`
     ).join('');
 
     const printHtml = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>Plan de chargement — Easy Packing</title>
+<title>${tp('print.title')} — Easy Packing</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #333; padding: 15mm; }
@@ -522,32 +540,32 @@ export default function App() {
 </head><body>
 <div class="header">
   <div class="header-left">
-    <h1>🚛 Easy Packing — Plan de chargement</h1>
-    <span>${currentProjectName || 'Sans nom'}</span>
+    <h1>🚛 Easy Packing — ${tp('print.title')}</h1>
+    <span>${currentProjectName || tp('print.noName')}</span>
   </div>
   <div class="header-right">
     ${new Date().toLocaleString('fr-FR')}<br>
-    ${result.trucks.length} camion(s)
+    ${result.trucks.length} ${tp('result.trucks')}
   </div>
 </div>
 
-<h2>Configuration camion</h2>
+<h2>${tp('print.truckConfig')}</h2>
 <div class="truck-config">
-  <span>Longueur: <strong>${truck.length_cm} cm</strong></span>
-  <span>Largeur: <strong>${truck.width_cm} cm</strong></span>
-  <span>Hauteur: <strong>${truck.height_cm} cm</strong></span>
-  <span>Poids max: <strong>${truck.max_weight_kg} kg</strong></span>
+  <span>${tp('truck.length')}: <strong>${truck.length_cm} cm</strong></span>
+  <span>${tp('truck.width')}: <strong>${truck.width_cm} cm</strong></span>
+  <span>${tp('truck.height')}: <strong>${truck.height_cm} cm</strong></span>
+  <span>${tp('truck.maxWeight')}: <strong>${truck.max_weight_kg} kg</strong></span>
 </div>
 
-<h2>Résumé</h2>
+<h2>${tp('print.summary')}</h2>
 <div class="summary">
-  <div class="summary-item"><div class="val">${result.totalPlaced}/${result.totalPalettes}</div><div class="lbl">Palettes placées</div></div>
-  <div class="summary-item"><div class="val">${result.trucks.length}</div><div class="lbl">Camion(s)</div></div>
+  <div class="summary-item"><div class="val">${result.totalPlaced}/${result.totalPalettes}</div><div class="lbl">${tp('results.placed')}</div></div>
+  <div class="summary-item"><div class="val">${result.trucks.length}</div><div class="lbl">${tp('results.trucks')}</div></div>
 </div>
 
 ${result.trucks.length > 1 ? `
-<h2>Détail par camion</h2>
-<table><thead><tr><th>Camion</th><th>Palettes</th><th>Plancher</th><th>Poids</th><th>Occupé</th></tr></thead>
+<h2>${tp('print.detail')}</h2>
+<table><thead><tr><th>${tp('print.col.truck')}</th><th>${tp('print.col.palettes')}</th><th>${tp('print.col.floor')}</th><th>${tp('print.col.weight')}</th><th>${tp('print.col.occupied')}</th></tr></thead>
 <tbody>${truckSummaryRows}</tbody></table>
 ` : ''}
 
@@ -577,6 +595,7 @@ ${truckSections}
     handleCalculate, handleDragPalettes, handleLoadProject, handleQuickSave,
     handleLogout, showPrefs, setShowPrefs, showProjects, setShowProjects,
     showPaletteConfig, setShowPaletteConfig,
+    showHistory, setShowHistory, showExport, setShowExport,
     paletteTemplates, setPaletteTemplates,
     currentProjectId, setCurrentProjectId, currentProjectName, setCurrentProjectName,
     saveFlash,
@@ -588,9 +607,9 @@ ${truckSections}
       <Layout>
         {!user && <LoginForm onLogin={handleLogin} />}
         {user && (
-          <div className="flex flex-col lg:flex-row gap-4 h-full">
+          <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 h-full">
             {/* Left panel: data entry */}
-            <div className="w-full lg:w-[420px] flex flex-col gap-4 shrink-0">
+            <div className="w-full lg:w-[420px] flex flex-col gap-2 sm:gap-4 shrink-0">
               <TruckConfig />
               <PaletteGrid />
               {/* Mode buttons — matching original Preview / Calculer */}
@@ -602,7 +621,7 @@ ${truckSections}
                              disabled:opacity-50 transition-colors shadow-md text-sm"
                   title="Aperçu rapide (1 passe, pas d'optimisation)"
                 >
-                  {loading && calcMode === 'preview' ? '...' : <><Eye className="w-4 h-4 inline -mt-0.5" /> Preview</>}
+                  {loading && calcMode === 'preview' ? '...' : <><Eye className="w-4 h-4 inline -mt-0.5" /> {getT(language)('btn.preview')}</>}
                 </button>
                 <button
                   onClick={() => handleCalculate('calculate')}
@@ -611,22 +630,22 @@ ${truckSections}
                              disabled:opacity-50 transition-colors shadow-md text-sm"
                   title="Calcul optimal (Recuit Simulé)"
                 >
-                  {loading && calcMode === 'calculate' ? '...' : <><Truck className="w-4 h-4 inline -mt-0.5" /> Calculer</>}
+                  {loading && calcMode === 'calculate' ? '...' : <><Truck className="w-4 h-4 inline -mt-0.5" /> {getT(language)('btn.calculate')}</>}
                 </button>
                 <button
                   onClick={() => { setResult(null); setError(''); }}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-3 rounded-lg transition-colors"
-                  title="Réinitialiser"
+                  className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-3 px-3 rounded-lg transition-colors"
+                  title={getT(language)('tooltip.reset')}
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
                 <button
                   onClick={async () => {
                     try { await api.clearCache(); setResult(null); setError(''); }
-                    catch(e) { setError('Erreur: ' + e.message); }
+                    catch(e) { setError(getT(language)('error.save') + ' ' + e.message); }
                   }}
-                  className="bg-red-100 hover:bg-red-200 text-red-600 py-3 px-3 rounded-lg transition-colors"
-                  title="Vider le cache et recalculer"
+                  className="bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 py-3 px-3 rounded-lg transition-colors"
+                  title={getT(language)('tooltip.clearCache')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -639,70 +658,70 @@ ${truckSections}
                         ? 'bg-green-100 hover:bg-green-200 text-green-700'
                         : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                   }`}
-                  title={currentProjectId ? `Sauvegarder "${currentProjectName}"` : 'Enregistrer comme nouveau projet'}
+                  title={currentProjectId ? `${getT(language)('btn.saveTitle')} "${currentProjectName}"` : getT(language)('tooltip.saveNew')}
                 >
                   <Save className="w-4 h-4" />
                 </button>
               </div>
-              {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg text-sm">{error}</div>}
+              {error && <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded-lg text-sm">{error}</div>}
             </div>
 
             {/* Right panel: visualization + results */}
-            <div className="flex-1 flex flex-col gap-4 min-w-0">
+            <div className="flex-1 flex flex-col gap-2 sm:gap-4 min-w-0">
               {/* View toggle */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => setViewMode('2d')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    viewMode === '2d' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    viewMode === '2d' ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  Vue 2D
+                  {getT(language)('view.2d')}
                 </button>
                 <button
                   onClick={() => setViewMode('3d')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    viewMode === '3d' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    viewMode === '3d' ? 'bg-primary-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  Vue 3D
+                  {getT(language)('view.3d')}
                 </button>
 
                 {result && result.trucks && result.trucks.length > 1 && (
-                  <span className="ml-2 text-sm text-gray-500 font-medium">{result.trucks.length} camions</span>
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 font-medium">{result.trucks.length} {getT(language)('result.trucks')}</span>
                 )}
 
                 {result && (
-                  <span className="ml-auto text-sm text-gray-500 flex gap-3 items-center">
-                    <span>Mode: <strong>{result.mode}</strong></span>
-                    <span>Heuristique: <strong>{result.heuristic}</strong></span>
-                    {result.iterations > 1 && <span>{result.iterations} iter.</span>}
-                    {result.fromCache && <span className="text-green-600 flex items-center gap-1" title="Résultat depuis le cache"><Zap className="w-3 h-3" /> cache</span>}
+                  <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 flex gap-3 items-center flex-wrap">
+                    <span>{getT(language)('result.mode')} <strong>{result.mode}</strong></span>
+                    <span>{getT(language)('result.heuristic')} <strong>{result.heuristic}</strong></span>
+                    {result.iterations > 1 && <span>{result.iterations} {getT(language)('result.iter')}</span>}
+                    {result.fromCache && <span className="text-green-600 flex items-center gap-1" title="Résultat depuis le cache"><Zap className="w-3 h-3" /> {getT(language)('result.cache')}</span>}
                     <button
                       onClick={handlePrint}
-                      className="ml-2 px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors flex items-center gap-1"
+                      className="ml-2 px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors flex items-center gap-1"
                       title="Imprimer le plan de chargement"
                     >
-                      <Printer className="w-4 h-4" /> Imprimer
+                      <Printer className="w-4 h-4" /> {getT(language)('btn.print')}
                     </button>
                   </span>
                 )}
               </div>
 
               {/* Visualization — all trucks stacked */}
-              <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-auto min-h-[300px] relative">
+              <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-auto min-h-[300px] relative">
                 {loading && (
-                  <div className="absolute inset-0 bg-white/70 z-10 flex flex-col items-center justify-center gap-3">
+                  <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-10 flex flex-col items-center justify-center gap-3">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-                    <p className="text-sm text-gray-600 font-medium">Calcul en cours...</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Calcul en cours...</p>
                     <p className="text-xs text-gray-400">Optimisation par recuit simulé</p>
                   </div>
                 )}
                 {result && result.trucks && result.trucks.map((trk, tIdx) => (
                   <div key={tIdx}>
                     {result.trucks.length > 1 && (
-                      <div className="bg-gray-100 border-b border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700">
-                        Camion {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} palette(s) — {trk.totalWeight}kg
+                      <div className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {getT(language)('results.truck')} {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} {getT(language)('results.palettes')} — {trk.totalWeight}kg
                       </div>
                     )}
                     <div style={{ height: '500px' }}>
@@ -726,7 +745,7 @@ ${truckSections}
                 ))}
                 {!result && (
                   <div className="flex items-center justify-center h-full min-h-[300px]">
-                    <p className="text-gray-400 text-lg">Lancez un calcul pour afficher le résultat</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-lg">Lancez un calcul pour afficher le résultat</p>
                   </div>
                 )}
               </div>
@@ -740,6 +759,8 @@ ${truckSections}
         {showPrefs && <PreferencesDialog />}
         {showProjects && <ProjectManager />}
         {showPaletteConfig && <PaletteConfigDialog />}
+        {showHistory && <HistoryDialog />}
+        {showExport && <ExportDialog />}
       </Layout>
     </AppContext.Provider>
   );

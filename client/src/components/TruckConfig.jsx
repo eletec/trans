@@ -1,9 +1,11 @@
 import React, { useContext } from 'react';
 import { Truck } from 'lucide-react';
 import { AppContext } from '../App';
+import { useT } from '../i18n';
 
 export default function TruckConfig() {
   const { truck, setTruck, TRUCK_PRESETS } = useContext(AppContext);
+  const t = useT();
 
   const update = (field, value) => {
     setTruck(prev => ({ ...prev, [field]: Number(value) || 0 }));
@@ -15,17 +17,17 @@ export default function TruckConfig() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        <Truck className="w-4 h-4" /> Configuration Camion
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <Truck className="w-4 h-4" /> {t('truck.title')}
       </h3>
       <div className="mb-3">
         <select
           onChange={e => applyPreset(e.target.value)}
           defaultValue=""
-          className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         >
-          <option value="" disabled>Format standard…</option>
+          <option value="" disabled>{t('truck.preset')}</option>
           {TRUCK_PRESETS.map(p => (
             <option key={p.name} value={p.name}>{p.name}</option>
           ))}
@@ -33,39 +35,39 @@ export default function TruckConfig() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Longueur (cm)</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('truck.length')}</label>
           <input
             type="number"
             value={truck.length_cm}
             onChange={e => update('length_cm', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Largeur (cm)</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('truck.width')}</label>
           <input
             type="number"
             value={truck.width_cm}
             onChange={e => update('width_cm', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Hauteur (cm)</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('truck.height')}</label>
           <input
             type="number"
             value={truck.height_cm}
             onChange={e => update('height_cm', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Poids max (kg)</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('truck.maxWeight')}</label>
           <input
             type="number"
             value={truck.max_weight_kg}
             onChange={e => update('max_weight_kg', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
       </div>

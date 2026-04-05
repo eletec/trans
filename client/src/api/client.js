@@ -48,9 +48,9 @@ export const api = {
     return data;
   },
 
-  async register(username, email, password) {
+  async register(username, email, password, entityName) {
     const data = await request('/auth/register', {
-      method: 'POST', body: JSON.stringify({ username, email, password })
+      method: 'POST', body: JSON.stringify({ username, email, password, entityName })
     });
     setToken(data.token);
     setUser(data.user);
@@ -136,5 +136,57 @@ export const api = {
 
   async savePreferences(preferences) {
     return request('/auth/preferences', { method: 'PUT', body: JSON.stringify({ preferences }) });
+  },
+
+  // Profile
+  async updateProfile(data) {
+    return request('/auth/profile', { method: 'PUT', body: JSON.stringify(data) });
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    return request('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
+  },
+
+  // Entity
+  async getEntity() {
+    return request('/auth/entity');
+  },
+
+  async updateEntitySettings(settings) {
+    return request('/auth/entity/settings', { method: 'PUT', body: JSON.stringify({ settings }) });
+  },
+
+  // History
+  async getHistory(limit = 50, offset = 0) {
+    return request(`/history?limit=${limit}&offset=${offset}`);
+  },
+
+  async saveHistory(data) {
+    return request('/history', { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  async getHistoryEntry(id) {
+    return request(`/history/${id}`);
+  },
+
+  async deleteHistoryEntry(id) {
+    return request(`/history/${id}`, { method: 'DELETE' });
+  },
+
+  // Export / Import
+  async exportProject(id) {
+    return request(`/export/project/${id}`);
+  },
+
+  async exportAllProjects() {
+    return request('/export/projects');
+  },
+
+  async exportConfig() {
+    return request('/export/config');
+  },
+
+  async importData(data) {
+    return request('/export/import', { method: 'POST', body: JSON.stringify(data) });
   }
 };

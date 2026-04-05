@@ -1,11 +1,13 @@
 import React, { useContext, useState } from 'react';
 import { Package, Plus } from 'lucide-react';
 import { AppContext } from '../App';
+import { useT } from '../i18n';
 
 export default function PaletteGrid() {
   const { palettes, addPalette, updatePalette, removePalette, paletteTemplates, PALETTE_COLORS } = useContext(AppContext);
   const [quickTpl, setQuickTpl] = useState('');
   const [quickQty, setQuickQty] = useState(1);
+  const t = useT();
 
   const applyTemplate = (index, templateName) => {
     const tpl = paletteTemplates.find(t => t.name === templateName);
@@ -28,9 +30,9 @@ export default function PaletteGrid() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 flex-1 min-h-0 overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 flex-1 min-h-0 overflow-hidden flex flex-col">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Package className="w-4 h-4" /> Palettes</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5"><Package className="w-4 h-4" /> {t('palettes.title')}</h3>
       </div>
 
       {/* Quick-add bar: template + quantity + add button */}
@@ -38,60 +40,60 @@ export default function PaletteGrid() {
         <select
           value={quickTpl}
           onChange={e => setQuickTpl(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         >
-          <option value="">Manuel (1200×800)</option>
+          <option value="">{t('palettes.manual')}</option>
           {paletteTemplates.map(t => (
             <option key={t.name} value={t.name}>{t.name}{t.label ? ` — ${t.label}` : ''}</option>
           ))}
         </select>
         <div className="flex items-center gap-1">
-          <label className="text-xs text-gray-500">Qté</label>
+          <label className="text-xs text-gray-500">{t('palettes.qty')}</label>
           <input
             type="number" min={1} max={99} value={quickQty}
             onChange={e => setQuickQty(Math.max(1, Number(e.target.value)))}
-            className="w-14 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-14 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
         <button
           onClick={handleQuickAdd}
           className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1"
         >
-          <Plus className="w-4 h-4" /> Ajouter
+          <Plus className="w-4 h-4" /> {t('btn.addRow').replace('+ ', '')}
         </button>
       </div>
 
       <div className="overflow-auto flex-1">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 sticky top-0">
+          <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
             <tr>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Réf</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Format</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">L (mm)</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">l (mm)</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">H (mm)</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Poids</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Qté</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Couleur</th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">Note</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.ref')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.format')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.length')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.width')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.height')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.weight')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.qty')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.color')}</th>
+              <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('palettes.note')}</th>
               <th className="px-1 py-1.5"></th>
             </tr>
           </thead>
           <tbody>
             {palettes.map((p, i) => (
-              <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50">
+              <tr key={p.id} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="px-1 py-1">
                   <input
                     type="text" value={p.ref}
                     onChange={e => updatePalette(i, 'ref', e.target.value)}
-                    className="w-14 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-14 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
                 <td className="px-1 py-1">
                   <select
                     value={`${p.length}x${p.width}`}
                     onChange={e => applyTemplate(i, e.target.value)}
-                    className="w-24 border border-gray-200 rounded px-1 py-0.5 text-xs bg-white"
+                    className="w-24 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs bg-white dark:bg-gray-700"
                   >
                     <option value="">Manuel</option>
                     {paletteTemplates.map(t => (
@@ -103,35 +105,35 @@ export default function PaletteGrid() {
                   <input
                     type="number" value={p.length}
                     onChange={e => updatePalette(i, 'length', Number(e.target.value))}
-                    className="w-16 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-16 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
                 <td className="px-1 py-1">
                   <input
                     type="number" value={p.width}
                     onChange={e => updatePalette(i, 'width', Number(e.target.value))}
-                    className="w-16 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-16 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
                 <td className="px-1 py-1">
                   <input
                     type="number" value={p.height}
                     onChange={e => updatePalette(i, 'height', Number(e.target.value))}
-                    className="w-16 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-16 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
                 <td className="px-1 py-1">
                   <input
                     type="number" value={p.weight}
                     onChange={e => updatePalette(i, 'weight', Number(e.target.value))}
-                    className="w-14 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-14 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
                 <td className="px-1 py-1">
                   <input
                     type="number" value={p.quantity} min={1}
                     onChange={e => updatePalette(i, 'quantity', Math.max(1, Number(e.target.value)))}
-                    className="w-12 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-12 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                   />
                 </td>
                 <td className="px-1 py-1">
@@ -145,7 +147,7 @@ export default function PaletteGrid() {
                   <input
                     type="text" value={p.comment}
                     onChange={e => updatePalette(i, 'comment', e.target.value)}
-                    className="w-20 border border-gray-200 rounded px-1 py-0.5 text-xs"
+                    className="w-20 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-1 py-0.5 text-xs"
                     placeholder="..."
                   />
                 </td>
@@ -153,7 +155,7 @@ export default function PaletteGrid() {
                   <button
                     onClick={() => removePalette(i)}
                     className="text-red-400 hover:text-red-600 text-lg leading-none"
-                    title="Supprimer"
+                    title={t('palettes.delete')}
                   >
                     ×
                   </button>
@@ -163,7 +165,7 @@ export default function PaletteGrid() {
             {palettes.length === 0 && (
               <tr>
                 <td colSpan={10} className="text-center py-8 text-gray-400 text-sm">
-                  Aucune palette — cliquez sur "+ Ajouter"
+                  {t('palettes.empty')}
                 </td>
               </tr>
             )}
@@ -172,10 +174,10 @@ export default function PaletteGrid() {
       </div>
 
       {palettes.length > 0 && (
-        <div className="mt-2 pt-2 border-t text-xs text-gray-500 flex gap-4">
-          <span>Total : <strong>{palettes.reduce((s, p) => s + (p.quantity || 1), 0)}</strong> palettes</span>
-          <span>Poids : <strong>{palettes.reduce((s, p) => s + (p.weight || 0) * (p.quantity || 1), 0)}</strong> kg</span>
-          <span>Surface : <strong>{(palettes.reduce((s, p) => s + (p.length * p.width / 1000000) * (p.quantity || 1), 0)).toFixed(2)}</strong> m²</span>
+        <div className="mt-2 pt-2 border-t dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 flex gap-4">
+          <span>{t('palettes.total')} <strong>{palettes.reduce((s, p) => s + (p.quantity || 1), 0)}</strong> {t('palettes.totalUnit')}</span>
+          <span>{t('palettes.weightLabel')} <strong>{palettes.reduce((s, p) => s + (p.weight || 0) * (p.quantity || 1), 0)}</strong> kg</span>
+          <span>{t('palettes.surface')} <strong>{(palettes.reduce((s, p) => s + (p.length * p.width / 1000000) * (p.quantity || 1), 0)).toFixed(2)}</strong> m²</span>
         </div>
       )}
     </div>
