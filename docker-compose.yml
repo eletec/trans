@@ -1,0 +1,16 @@
+services:
+  easypacking:
+    build: .
+    container_name: easypacking
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - easypacking-data:/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=changez-moi-en-production
+
+volumes:
+  easypacking-data:

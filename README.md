@@ -49,6 +49,16 @@ npm start
 
 Le client est compilé dans `dist/` et servi directement par Express sur `http://localhost:3001`.
 
+### Docker
+
+```bash
+docker compose up -d
+```
+
+L'appli est accessible sur `http://localhost:3001`. Les données SQLite sont persistées dans un volume Docker (`easypacking-data`).
+
+> **Important** : modifiez `JWT_SECRET` dans `docker-compose.yml` avant de déployer en production.
+
 ## Architecture
 
 ```
