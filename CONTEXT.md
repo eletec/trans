@@ -142,3 +142,5 @@ www/
     · Libellés simplifiés dans chaque section pour accélérer la sélection
 - 2026-04-05 : Cohérence application preset dans Préférences
     · L'application d'un format standard met aussi à jour `axle_rear_cm`
+- 2026-04-05 : Options 2D/3D harmonisées pour le groupement
+    · `groupContiguous` appliqué aussi aux solveurs 3D (layered et cuboïde)

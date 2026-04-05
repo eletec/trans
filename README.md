@@ -13,6 +13,7 @@ The engine combines a 2D solver (MAXRECTS + Simulated Annealing), a layered 3D s
 - 3D stacking mode (experimental): layered stacking with z coordinate
 - Full 3D cuboid mode (Option B): true volume placement in free cuboids (x,y,z)
 - 3D business rule: stackable yes/no per pallet (active in 3D modes only)
+- Identical-pallet grouping and rotation apply in both 2D and 3D solvers
 - 2D view: interactive canvas (drag and drop, multi-select, collisions)
 - 3D view: Three.js rendering (zoom, orbit, layer visualization)
 - Axle + center of gravity indicators: king pin, bogie, CoG and load split
