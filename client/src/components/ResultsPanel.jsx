@@ -7,7 +7,7 @@ export default function ResultsPanel({ result, truck }) {
   if (!result) return null;
 
   const { trucks, totalPlaced, totalPalettes, unplaced, log } = result;
-  const is3D = result.packingDimension === '3d';
+  const is3D = result.packingDimension && result.packingDimension !== '2d';
   const truckHeightMm = (truck?.height_cm || 0) * 10;
   const allPalettes = [
     ...(trucks || []).flatMap(trk => trk.placements || []),

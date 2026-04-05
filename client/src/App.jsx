@@ -256,7 +256,7 @@ export default function App() {
   const [groupContiguous, setGroupContiguous] = useState(true);
   const [maxTrucks, setMaxTrucks] = useState(5);
   const [calcMode, setCalcMode] = useState('calculate'); // 'preview' | 'calculate'
-  const [packingDimension, setPackingDimension] = useState('2d'); // '2d' | '3d'
+  const [packingDimension, setPackingDimension] = useState('2d'); // '2d' | '3d' | '3d-cuboid'
   const [iterations, setIterations] = useState(1000);
   const [showPrefs, setShowPrefs] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
@@ -590,6 +590,13 @@ ${truckSections}
     setTimeout(() => { printWin.print(); }, 500);
   };
 
+  const is3DMode = (mode) => !!mode && mode !== '2d';
+  const packingLabel = (mode) => {
+    if (mode === '3d-cuboid') return getT(language)('result.packing.3dCuboid');
+    if (mode === '3d') return getT(language)('result.packing.3d');
+    return getT(language)('result.packing.2d');
+  };
+
   const ctx = {
     user, setUser, palettes, setPalettes, truck, setTruck,
     result, setResult, loading, viewMode, setViewMode,
@@ -641,6 +648,16 @@ ${truckSections}
                   }`}
                 >
                   {getT(language)('result.packing.3d')}
+                </button>
+                <button
+                  onClick={() => setPackingDimension('3d-cuboid')}
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    packingDimension === '3d-cuboid'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {getT(language)('result.packing.3dCuboid')}
                 </button>
               </div>
               {/* Mode buttons — matching original Preview / Calculer */}
@@ -725,7 +742,7 @@ ${truckSections}
                 {result && (
                   <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 flex gap-3 items-center flex-wrap">
                     <span>{getT(language)('result.mode')} <strong>{result.mode}</strong></span>
-                    <span>{getT(language)('result.packing')} <strong>{result.packingDimension === '3d' ? getT(language)('result.packing.3d') : getT(language)('result.packing.2d')}</strong></span>
+                    <span>{getT(language)('result.packing')} <strong>{packingLabel(result.packingDimension)}</strong></span>
                     <span>{getT(language)('result.heuristic')} <strong>{result.heuristic}</strong></span>
                     {result.iterations > 1 && <span>{result.iterations} {getT(language)('result.iter')}</span>}
                     {result.fromCache && <span className="text-green-600 flex items-center gap-1" title="Résultat depuis le cache"><Zap className="w-3 h-3" /> {getT(language)('result.cache')}</span>}
@@ -740,9 +757,9 @@ ${truckSections}
                 )}
               </div>
 
-              {result?.packingDimension === '3d' && viewMode === '2d' && (
+              {is3DMode(result?.packingDimension) && viewMode === '2d' && (
                 <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-                  Mode 3D stacking actif: passe en Vue 3D pour visualiser les couches (hauteur Z).
+                  Mode {packingLabel(result?.packingDimension)} actif: passe en Vue 3D pour visualiser les couches (hauteur Z).
                 </div>
               )}
 
@@ -765,7 +782,7 @@ ${truckSections}
                   <div key={tIdx}>
                     {result.trucks.length > 1 && (
                       <div className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        {getT(language)('results.truck')} {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} {getT(language)('results.palettes')} — {trk.totalWeight}kg{result.packingDimension === '3d' ? ` — ${trk.layers || 1} couche(s)` : ''}
+                        {getT(language)('results.truck')} {tIdx + 1} — {trk.floorMeters?.toFixed(2)}m — {trk.placements?.length} {getT(language)('results.palettes')} — {trk.totalWeight}kg{is3DMode(result.packingDimension) ? ` — ${trk.layers || 1} couche(s)` : ''}
                       </div>
                     )}
                     <div style={{ height: viewMode === '3d' ? '450px' : 'auto' }}>

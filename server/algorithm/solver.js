@@ -5,6 +5,7 @@
 const MaxRectsBinPack = require('./maxrects');
 const { groupPalettes } = require('./grouping');
 const { solve3D } = require('./solver3d');
+const { solve3DCuboid } = require('./solver3d_cuboid');
 
 const HEURISTICS = [
   'BestShortSideFit',
@@ -13,7 +14,7 @@ const HEURISTICS = [
   'BottomLeftRule',
   'ContactPointRule'
 ];
-const SOLVER_ALGO_REV = '2026-04-05-3d-v2';
+const SOLVER_ALGO_REV = '2026-04-05-3d-v3-cuboid';
 
 // --- Cache system ---
 const cache = new Map();
@@ -58,7 +59,7 @@ function _cacheSet(key, result) {
  * @param {Object} params.truck - {length_cm, width_cm, height_cm, max_weight_kg}
  * @param {string} params.heuristic - 'auto' or specific heuristic name
  * @param {string} params.mode - 'preview' | 'calculate' | 'simulation'
- * @param {string} params.packingDimension - '2d' | '3d'
+ * @param {string} params.packingDimension - '2d' | '3d' | '3d-cuboid'
  * @param {number} params.iterations - number of random iterations for simulation mode (default 0 = deterministic)
  * @param {boolean} params.allowRotation - allow 90° rotation (default true)
  * @param {boolean} params.groupContiguous - group identical palettes (default true)
@@ -128,8 +129,25 @@ function solve(params) {
     }
   }
 
-  // 3D packing is intentionally routed to a separate algorithm so we can keep
+  // 3D packing is intentionally routed to separate algorithms so we can keep
   // the 2D MAXRECTS pipeline stable and backward compatible.
+  if (packingDimension === '3d-cuboid') {
+    const result3dCuboid = solve3DCuboid({
+      palettes: expandedPalettes,
+      truck,
+      heuristic,
+      mode,
+      allowRotation,
+      maxTrucks,
+      heuristics: HEURISTICS
+    });
+    result3dCuboid.totalPalettes = totalPalettes;
+    result3dCuboid.fromCache = false;
+    result3dCuboid.packingDimension = '3d-cuboid';
+    _cacheSet(cKey, result3dCuboid);
+    return result3dCuboid;
+  }
+
   if (packingDimension === '3d') {
     const result3d = solve3D({
       palettes: expandedPalettes,

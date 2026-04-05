@@ -84,6 +84,7 @@ export default function PreferencesDialog() {
                 >
                   <option value="2d">{t('prefs.packingDimension.2d')}</option>
                   <option value="3d">{t('prefs.packingDimension.3d')}</option>
+                  <option value="3d-cuboid">{t('prefs.packingDimension.3dCuboid')}</option>
                 </select>
               </div>
 

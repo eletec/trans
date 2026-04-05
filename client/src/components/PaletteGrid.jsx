@@ -200,7 +200,7 @@ export default function PaletteGrid() {
         </div>
       )}
 
-      {packingDimension === '3d' && palettes.length > 0 && (
+      {packingDimension !== '2d' && palettes.length > 0 && (
         <div className={`mt-2 text-xs rounded-lg px-2 py-1.5 ${tooTallQty > 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'}`}>
           {t('palettes.stackRule')} ({truckHeightMm} mm) - {tooTallQty} {t('palettes.tooTall')}
         </div>

@@ -12,7 +12,7 @@ Calcul d'encombrement de palettes dans un ou plusieurs camions avec visualisatio
 - **Visualisation 2D** : Canvas HTML5 avec drag & drop
 - **Visualisation 3D** : Three.js
 - **Auth** : JWT + bcrypt
-- **Algorithme** : MAXRECTS amélioré + mode 3D stacking (layered) expérimental
+- **Algorithme** : MAXRECTS amélioré + 3D stacking layered + 3D cuboïde free-space (Option B)
 
 ## Architecture
 ```
@@ -30,6 +30,7 @@ www/
 │       ├── maxrects.js   # MAXRECTS bin packing porté en JS
 │       ├── solver.js     # Orchestrateur multi-heuristique + multi-camion
 │       ├── solver3d.js   # Solveur 3D stacking (couches)
+│       ├── solver3d_cuboid.js # Solveur 3D cuboïde (free-space Option B)
 │       └── grouping.js   # Groupement palettes identiques
 ├── client/              # Frontend React
 │   ├── src/
@@ -120,3 +121,15 @@ www/
     · message si vue 3D affichée avec calcul 2D
     · message de faisabilité empilage selon hauteur palette / hauteur camion
 - 2026-04-05 : Header/top menu passé en sticky avec zone principale scrollable
+- 2026-04-05 : Option B implémentée : solveur 3D cuboïde complet (`packingDimension = 3d-cuboid`)
+    · Nouveau moteur free-space 3D en cuboïdes (`x,y,z,w,d,h`)
+    · Contraintes de support : ratio minimum, coins/centre supportés
+    · Répartition de charge sur palettes supports + capacité restante
+    · Respect de `stackable=false` (sol uniquement + colonnes interdites)
+- 2026-04-05 : UI/Préférences étendues pour 3 modes (`2d`, `3d`, `3d-cuboid`)
+    · Boutons de bascule rapide 2D / 3D stacking / 3D cuboïde
+    · Labels résultat et préférences mis à jour
+    · Persistance complète du mode dans préférences/projets/historique
+- 2026-04-05 : Optimisation Option B (compression mètres plancher)
+    · Balayage de largeur utile X (coarse + fine) côté solveur cuboïde
+    · Scoring de placement orienté longueur utilisée avant autres critères

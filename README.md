@@ -1,9 +1,9 @@
 # Easy Packing — Optimisation Chargement Camions
 
 Application web d'optimisation de chargement de palettes en camion.
-Le moteur combine un solveur 2D (MAXRECTS + Simulated Annealing) et un mode 3D stacking experimental pour reduire les metres plancher lorsque l'empilage est possible.
+Le moteur combine un solveur 2D (MAXRECTS + Simulated Annealing), un mode 3D stacking layered et un solveur 3D cuboide complet (Option B) base sur des espaces libres 3D.
 
-![Easy Packing](https://img.shields.io/badge/version-1.3.0-blue) ![Node.js](https://img.shields.io/badge/node-%3E%3D18-green) ![License](https://img.shields.io/badge/license-private-lightgrey)
+![Easy Packing](https://img.shields.io/badge/version-1.4.0-blue) ![Node.js](https://img.shields.io/badge/node-%3E%3D18-green) ![License](https://img.shields.io/badge/license-private-lightgrey)
 
 ## Fonctionnalites
 
@@ -11,6 +11,7 @@ Le moteur combine un solveur 2D (MAXRECTS + Simulated Annealing) et un mode 3D s
 - Multi-camions: repartition automatique en cas de debordement
 - Mode remplissage 2D: solveur historique, robuste et rapide
 - Mode remplissage 3D stacking (experimental): empilage par couches avec coordonnee z
+- Mode remplissage 3D cuboide (Option B): placement en volume dans des cuboides libres (x,y,z)
 - Regle metier 3D: palette empilable oui/non (active uniquement en mode 3D)
 - Vue 2D: canvas interactif (drag and drop, multi-selection, collisions)
 - Vue 3D: rendu Three.js (zoom, orbite, visualisation des couches)
@@ -81,6 +82,17 @@ Regles appliquees:
 - Les empreintes des palettes non empilables deviennent des zones interdites en couches superieures
 - Empilage possible seulement si la hauteur camion le permet
 
+### 3) Solveur 3D cuboide complet (Option B)
+
+Le mode Option B utilise un free-space 3D en cuboides:
+
+- Maintient une liste d'espaces libres 3D (`x,y,z,w,d,h`)
+- Place les palettes selon heuristiques 3D et contraintes de support
+- Verifie la stabilite de pose (ratio de support, coins/centre supportes)
+- Repartit la charge sur les palettes support et respecte leur capacite restante
+- Integre la regle `stackable=false` (sol uniquement + colonne interdite)
+- Optimise la longueur utile (metres plancher) via balayage de largeur X
+
 ## Regles pratiques pour tester l'empilage
 
 Pour empiler sur 2 couches:
@@ -107,6 +119,7 @@ www/
 │   └── algorithm/
 │       ├── solver.js          # Orchestrateur principal
 │       ├── solver3d.js        # Solveur 3D stacking (layered)
+│       ├── solver3d_cuboid.js # Solveur 3D cuboide (Option B)
 │       ├── maxrects.js
 │       └── grouping.js
 ├── client/
@@ -132,7 +145,7 @@ www/
 
 | Methode | Route | Description |
 |---|---|---|
-| POST | `/api/calculate` | Lance un calcul (`packingDimension`: `2d` ou `3d`) |
+| POST | `/api/calculate` | Lance un calcul (`packingDimension`: `2d`, `3d`, `3d-cuboid`) |
 | GET | `/api/calculate/cache` | Statistiques du cache solveur |
 | DELETE | `/api/calculate/cache` | Vide le cache solveur |
 | GET | `/api/auth/preferences` | Charge preferences utilisateur |
@@ -144,10 +157,11 @@ www/
 
 ## Limites connues
 
-- Le mode 3D actuel est un solveur layered (pas encore un solveur cuboide free-space complet).
+- Le mode 3D cuboide (Option B) est heuristique: il privilegie la faisabilite/stabilite et ne garantit pas toujours la meilleure compaction absolue.
+- Certaines contraintes physiques avancees ne sont pas encore modelisees (stabilite dynamique transport, compatibilites de gerbage fines).
 - Les performances front peuvent afficher un warning de chunk > 500 kB au build Vite.
 
 ## Roadmap
 
-- Option B: solveur cuboide 3D complet (free-space avance + contraintes de support detaillees)
+- Tuning continu du solveur cuboide 3D (qualite de compaction et vitesse)
 - Contraintes metier additionnelles (charge supportable, stabilite avancee, compatibilites de superposition)
