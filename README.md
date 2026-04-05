@@ -16,6 +16,8 @@ Le moteur combine un solveur 2D (MAXRECTS + Simulated Annealing), un mode 3D sta
 - Vue 2D: canvas interactif (drag and drop, multi-selection, collisions)
 - Vue 3D: rendu Three.js (zoom, orbite, visualisation des couches)
 - Indicateurs essieux + CdG: king pin, bogie, CdG et repartition de charge
+- Catalogue standards internationaux: 42 formats camion/container preconfigures
+- Menus de presets groupes par zones (EU, UK, ISO, NA, LATAM, CN, JP, IN, AU, GCC)
 - Internationalisation: 9 langues (fr, en, es, de, it, nl, pt, zh, ru)
 - Themes dark/light, responsive mobile/desktop, historique, projets, export/import
 
@@ -101,6 +103,18 @@ Pour empiler sur 2 couches:
 - Exemple avec camion 270 cm (2700 mm): palette <= 1350 mm
 
 Donc une palette de 1500 mm ne peut pas etre empilee en mode 3D.
+
+## Formats standards internationaux
+
+Les presets integres couvrent les formats les plus utilises en logistique:
+
+- Europe: semi-remorques standard/mega/frigo, porteurs, BDF, fourgons
+- UK/Irlande: artic et rigids 18t/26t
+- ISO maritime: 10', 20', 40', 40' HC, 45' HC, reefer 40' HC
+- Amerique du Nord: dry van 53'/48', reefer, pup, straight trucks
+- LATAM, Chine, Japon, Inde, Australie/Oceanie et GCC
+
+Les dimensions representees sont des references operationnelles (principalement internes utiles) et peuvent varier legerement selon constructeur/equipement.
 
 ## Architecture
 

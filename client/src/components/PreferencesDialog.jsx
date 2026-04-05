@@ -4,6 +4,31 @@ import { AppContext } from '../App';
 import { useT } from '../i18n';
 import { api } from '../api/client';
 
+const PRESET_GROUP_LABELS = {
+  EU: 'EU / Europe',
+  UK: 'UK / Ireland',
+  ISO: 'ISO Containers',
+  NA: 'North America',
+  LATAM: 'Latin America',
+  CN: 'China',
+  JP: 'Japan',
+  IN: 'India',
+  AU: 'Australia / Oceania',
+  GCC: 'Middle East (GCC)',
+  Other: 'Other'
+};
+
+function getPresetGroupCode(name) {
+  const idx = name.indexOf(' - ');
+  if (idx <= 0) return 'Other';
+  return name.slice(0, idx).trim();
+}
+
+function getPresetShortLabel(name, groupCode) {
+  const prefix = `${groupCode} - `;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+}
+
 export default function PreferencesDialog() {
   const {
     setShowPrefs, heuristic, setHeuristic,
@@ -18,9 +43,22 @@ export default function PreferencesDialog() {
     TRUCK_PRESETS
   } = useContext(AppContext);
 
+  const groupedPresets = TRUCK_PRESETS.reduce((acc, preset) => {
+    const groupCode = getPresetGroupCode(preset.name);
+    if (!acc.has(groupCode)) acc.set(groupCode, []);
+    acc.get(groupCode).push(preset);
+    return acc;
+  }, new Map());
+
   const applyTruckPreset = (name) => {
     const p = TRUCK_PRESETS.find(t => t.name === name);
-    if (p) setTruck({ length_cm: p.length_cm, width_cm: p.width_cm, height_cm: p.height_cm, max_weight_kg: p.max_weight_kg });
+    if (p) setTruck({
+      length_cm: p.length_cm,
+      width_cm: p.width_cm,
+      height_cm: p.height_cm,
+      max_weight_kg: p.max_weight_kg,
+      axle_rear_cm: p.axle_rear_cm,
+    });
   };
   const t = useT();
 
@@ -125,8 +163,14 @@ export default function PreferencesDialog() {
                   className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                   <option value="" disabled>{t('prefs.choosePreset')}</option>
-                  {TRUCK_PRESETS.map(p => (
-                    <option key={p.name} value={p.name}>{p.name} ({p.length_cm}×{p.width_cm}cm)</option>
+                  {Array.from(groupedPresets.entries()).map(([groupCode, presets]) => (
+                    <optgroup key={groupCode} label={PRESET_GROUP_LABELS[groupCode] || groupCode}>
+                      {presets.map(p => (
+                        <option key={p.name} value={p.name}>
+                          {getPresetShortLabel(p.name, groupCode)} ({p.length_cm}×{p.width_cm}cm)
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

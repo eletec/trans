@@ -227,14 +227,63 @@ const DEFAULT_TRUCK = {
   axle_rear_cm: 1160,
 };
 
-// Standard transport container presets
+// Standard international transport presets (road, ISO containers, and regional fleets)
 const TRUCK_PRESETS = [
-  { name: 'Semi-remorque 13.6m', length_cm: 1360, width_cm: 245, height_cm: 270, max_weight_kg: 24000, axle_rear_cm: 1160 },
-  { name: 'Porteur 7.7m',        length_cm: 770,  width_cm: 245, height_cm: 270, max_weight_kg: 11000, axle_rear_cm: 560  },
-  { name: 'Fourgon 20m³',        length_cm: 430,  width_cm: 210, height_cm: 220, max_weight_kg: 1200,  axle_rear_cm: 300  },
-  { name: "Container 20'",       length_cm: 590,  width_cm: 235, height_cm: 239, max_weight_kg: 21770, axle_rear_cm: 500  },
-  { name: "Container 40'",       length_cm: 1203, width_cm: 235, height_cm: 239, max_weight_kg: 26680, axle_rear_cm: 1020 },
-  { name: "Container 40' HC",    length_cm: 1203, width_cm: 235, height_cm: 269, max_weight_kg: 26460, axle_rear_cm: 1020 },
+  // Europe - road
+  { name: 'EU - Semi-remorque 13.6m (tautliner)', length_cm: 1360, width_cm: 245, height_cm: 270, max_weight_kg: 24000, axle_rear_cm: 1160 },
+  { name: 'EU - Semi-remorque MEGA 13.6m',        length_cm: 1360, width_cm: 245, height_cm: 300, max_weight_kg: 24000, axle_rear_cm: 1160 },
+  { name: 'EU - Semi-remorque frigorifique 13.4m', length_cm: 1330, width_cm: 246, height_cm: 260, max_weight_kg: 22000, axle_rear_cm: 1130 },
+  { name: 'EU - Porteur 7.7m',                     length_cm: 770,  width_cm: 245, height_cm: 270, max_weight_kg: 11000, axle_rear_cm: 560  },
+  { name: 'EU - Porteur 9.6m',                     length_cm: 960,  width_cm: 245, height_cm: 270, max_weight_kg: 15000, axle_rear_cm: 700  },
+  { name: 'EU - Porteur 12.0m',                    length_cm: 1200, width_cm: 245, height_cm: 270, max_weight_kg: 18000, axle_rear_cm: 870  },
+  { name: 'EU - Caisse mobile BDF 7.45m',          length_cm: 745,  width_cm: 245, height_cm: 270, max_weight_kg: 14000, axle_rear_cm: 610  },
+  { name: 'EU - Fourgon 12m3',                     length_cm: 320,  width_cm: 175, height_cm: 190, max_weight_kg: 1000,  axle_rear_cm: 220  },
+  { name: 'EU - Fourgon 20m3',                     length_cm: 430,  width_cm: 210, height_cm: 220, max_weight_kg: 1200,  axle_rear_cm: 300  },
+  { name: 'EU - Fourgon 30m3',                     length_cm: 500,  width_cm: 220, height_cm: 230, max_weight_kg: 1500,  axle_rear_cm: 350  },
+
+  // UK / Ireland - common road freight
+  { name: 'UK - Artic 13.6m',                      length_cm: 1360, width_cm: 245, height_cm: 270, max_weight_kg: 24500, axle_rear_cm: 1160 },
+  { name: 'UK - Rigid 18t (8.2m body)',            length_cm: 820,  width_cm: 245, height_cm: 255, max_weight_kg: 10000, axle_rear_cm: 600  },
+  { name: 'UK - Rigid 26t (9.6m body)',            length_cm: 960,  width_cm: 245, height_cm: 260, max_weight_kg: 15000, axle_rear_cm: 700  },
+
+  // ISO containers (internal dimensions approximations)
+  { name: "ISO - Container 10'",                  length_cm: 283,  width_cm: 235, height_cm: 239, max_weight_kg: 10000, axle_rear_cm: 240  },
+  { name: "ISO - Container 20'",                  length_cm: 590,  width_cm: 235, height_cm: 239, max_weight_kg: 21770, axle_rear_cm: 500  },
+  { name: "ISO - Container 40'",                  length_cm: 1203, width_cm: 235, height_cm: 239, max_weight_kg: 26680, axle_rear_cm: 1020 },
+  { name: "ISO - Container 40' HC",               length_cm: 1203, width_cm: 235, height_cm: 269, max_weight_kg: 26460, axle_rear_cm: 1020 },
+  { name: "ISO - Container 45' HC",               length_cm: 1355, width_cm: 235, height_cm: 269, max_weight_kg: 27700, axle_rear_cm: 1150 },
+  { name: "ISO - Container Reefer 40' HC",        length_cm: 1158, width_cm: 229, height_cm: 255, max_weight_kg: 27000, axle_rear_cm: 980  },
+
+  // North America - common trailers / box trucks
+  { name: "NA - Dry Van 53'",                     length_cm: 1615, width_cm: 248, height_cm: 274, max_weight_kg: 20000, axle_rear_cm: 1375 },
+  { name: "NA - Reefer 53'",                      length_cm: 1600, width_cm: 246, height_cm: 266, max_weight_kg: 19500, axle_rear_cm: 1360 },
+  { name: "NA - Dry Van 48'",                     length_cm: 1463, width_cm: 248, height_cm: 274, max_weight_kg: 19000, axle_rear_cm: 1245 },
+  { name: "NA - Pup Trailer 28'",                 length_cm: 853,  width_cm: 248, height_cm: 274, max_weight_kg: 12000, axle_rear_cm: 725  },
+  { name: "NA - Straight Truck 24'",              length_cm: 731,  width_cm: 246, height_cm: 250, max_weight_kg: 10000, axle_rear_cm: 620  },
+  { name: "NA - Straight Truck 26'",              length_cm: 792,  width_cm: 246, height_cm: 250, max_weight_kg: 12000, axle_rear_cm: 670  },
+
+  // Latin America - frequently used freight bodies
+  { name: 'LATAM - Carreta 15m',                   length_cm: 1500, width_cm: 248, height_cm: 270, max_weight_kg: 28000, axle_rear_cm: 1275 },
+  { name: 'LATAM - Truck 3/4 (6.8m)',              length_cm: 680,  width_cm: 240, height_cm: 250, max_weight_kg: 6000,  axle_rear_cm: 500  },
+  { name: 'LATAM - Urban VUC (4.2m)',              length_cm: 420,  width_cm: 210, height_cm: 220, max_weight_kg: 2500,  axle_rear_cm: 300  },
+
+  // Asia - common domestic and long-haul formats
+  { name: 'CN - Van 7.6m',                         length_cm: 760,  width_cm: 240, height_cm: 250, max_weight_kg: 8000,  axle_rear_cm: 560  },
+  { name: 'CN - Van 9.6m',                         length_cm: 960,  width_cm: 240, height_cm: 250, max_weight_kg: 12000, axle_rear_cm: 700  },
+  { name: 'CN - Semi 13.75m',                      length_cm: 1375, width_cm: 250, height_cm: 300, max_weight_kg: 30000, axle_rear_cm: 1170 },
+  { name: 'CN - Semi 17.5m',                       length_cm: 1750, width_cm: 250, height_cm: 300, max_weight_kg: 32000, axle_rear_cm: 1490 },
+  { name: 'JP - 2t Truck',                         length_cm: 430,  width_cm: 210, height_cm: 220, max_weight_kg: 2000,  axle_rear_cm: 300  },
+  { name: 'JP - 4t Truck',                         length_cm: 620,  width_cm: 220, height_cm: 230, max_weight_kg: 4000,  axle_rear_cm: 450  },
+  { name: 'JP - 10t Truck',                        length_cm: 960,  width_cm: 240, height_cm: 240, max_weight_kg: 10000, axle_rear_cm: 700  },
+  { name: 'IN - SXL 20ft',                         length_cm: 610,  width_cm: 244, height_cm: 260, max_weight_kg: 9000,  axle_rear_cm: 450  },
+  { name: 'IN - SXL 32ft',                         length_cm: 975,  width_cm: 244, height_cm: 270, max_weight_kg: 16000, axle_rear_cm: 715  },
+
+  // Oceania / Middle East - common heavy logistics
+  { name: 'AU - Semi Trailer 13.7m',               length_cm: 1370, width_cm: 248, height_cm: 300, max_weight_kg: 28000, axle_rear_cm: 1165 },
+  { name: 'AU - B-Double (2x13.7m)',               length_cm: 2740, width_cm: 248, height_cm: 300, max_weight_kg: 42000, axle_rear_cm: 2330 },
+  { name: 'AU - Road Train (3 trailers)',          length_cm: 3650, width_cm: 248, height_cm: 300, max_weight_kg: 70000, axle_rear_cm: 3100 },
+  { name: 'GCC - Curtain Side 13.6m',              length_cm: 1360, width_cm: 248, height_cm: 280, max_weight_kg: 26000, axle_rear_cm: 1160 },
+  { name: 'GCC - Flatbed 12.5m',                   length_cm: 1250, width_cm: 248, height_cm: 260, max_weight_kg: 26000, axle_rear_cm: 1060 },
 ];
 
 const PALETTE_COLORS = [

@@ -133,3 +133,12 @@ www/
 - 2026-04-05 : Optimisation Option B (compression mètres plancher)
     · Balayage de largeur utile X (coarse + fine) côté solveur cuboïde
     · Scoring de placement orienté longueur utilisée avant autres critères
+- 2026-04-05 : Catalogue formats standards fortement étendu côté UI
+    · Passage de 6 à 42 presets camion/container internationaux
+    · Couverture multi-régions : EU, UK, ISO, NA, LATAM, CN, JP, IN, AU, GCC
+    · Ajout de formats lourds (B-Double, Road Train) et utilitaires régionaux
+- 2026-04-05 : Sélecteurs de presets regroupés visuellement par zones
+    · `TruckConfig` et `PreferencesDialog` utilisent des groupes (`optgroup`)
+    · Libellés simplifiés dans chaque section pour accélérer la sélection
+- 2026-04-05 : Cohérence application preset dans Préférences
+    · L'application d'un format standard met aussi à jour `axle_rear_cm`

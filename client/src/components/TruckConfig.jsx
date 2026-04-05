@@ -3,9 +3,41 @@ import { Truck } from 'lucide-react';
 import { AppContext } from '../App';
 import { useT } from '../i18n';
 
+const PRESET_GROUP_LABELS = {
+  EU: 'EU / Europe',
+  UK: 'UK / Ireland',
+  ISO: 'ISO Containers',
+  NA: 'North America',
+  LATAM: 'Latin America',
+  CN: 'China',
+  JP: 'Japan',
+  IN: 'India',
+  AU: 'Australia / Oceania',
+  GCC: 'Middle East (GCC)',
+  Other: 'Other'
+};
+
+function getPresetGroupCode(name) {
+  const idx = name.indexOf(' - ');
+  if (idx <= 0) return 'Other';
+  return name.slice(0, idx).trim();
+}
+
+function getPresetShortLabel(name, groupCode) {
+  const prefix = `${groupCode} - `;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+}
+
 export default function TruckConfig() {
   const { truck, setTruck, TRUCK_PRESETS } = useContext(AppContext);
   const t = useT();
+
+  const groupedPresets = TRUCK_PRESETS.reduce((acc, preset) => {
+    const groupCode = getPresetGroupCode(preset.name);
+    if (!acc.has(groupCode)) acc.set(groupCode, []);
+    acc.get(groupCode).push(preset);
+    return acc;
+  }, new Map());
 
   const update = (field, value) => {
     setTruck(prev => ({ ...prev, [field]: Number(value) || 0 }));
@@ -28,8 +60,12 @@ export default function TruckConfig() {
           className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         >
           <option value="" disabled>{t('truck.preset')}</option>
-          {TRUCK_PRESETS.map(p => (
-            <option key={p.name} value={p.name}>{p.name}</option>
+          {Array.from(groupedPresets.entries()).map(([groupCode, presets]) => (
+            <optgroup key={groupCode} label={PRESET_GROUP_LABELS[groupCode] || groupCode}>
+              {presets.map(p => (
+                <option key={p.name} value={p.name}>{getPresetShortLabel(p.name, groupCode)}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
