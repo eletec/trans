@@ -39,7 +39,7 @@ export default function PaletteGrid() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 flex-1 min-h-0 overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 flex-1 min-h-0 lg:min-h-[420px] overflow-hidden flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5"><Package className="w-4 h-4" /> {t('palettes.title')}</h3>
       </div>

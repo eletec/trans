@@ -687,7 +687,7 @@ ${truckSections}
         {user && (
           <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 h-full w-full">
             {/* Left panel: data entry */}
-            <div className="w-full lg:w-[520px] flex flex-col gap-2 sm:gap-4 shrink-0">
+            <div className="w-full lg:w-[600px] flex flex-col gap-2 sm:gap-4 shrink-0">
               <TruckConfig />
               <PaletteGrid />
               <div className="flex items-center gap-2 text-xs sm:text-sm">
