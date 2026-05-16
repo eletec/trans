@@ -13,10 +13,18 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.easypacking.rule=Host(`${DOMAIN:-easypacking.localhost}`)"
+      # Route principale : easypacking.be + www.easypacking.be
+      - "traefik.http.routers.easypacking.rule=Host(`${DOMAIN:-easypacking.localhost}`) || Host(`www.${DOMAIN:-easypacking.localhost}`)"
       - "traefik.http.routers.easypacking.entrypoints=websecure"
       - "traefik.http.routers.easypacking.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.easypacking.tls.domains[0].main=${DOMAIN:-easypacking.localhost}"
+      - "traefik.http.routers.easypacking.tls.domains[0].sans=www.${DOMAIN:-easypacking.localhost}"
       - "traefik.http.services.easypacking.loadbalancer.server.port=3001"
+      # Redirection www → non-www
+      - "traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\\.(.+)"
+      - "traefik.http.middlewares.www-redirect.redirectregex.replacement=https://$${1}"
+      - "traefik.http.middlewares.www-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.easypacking.middlewares=www-redirect"
 
 volumes:
   easypacking-data:
