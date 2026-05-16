@@ -29,35 +29,44 @@ const DEFAULT_ENTITY_SETTINGS = {
 // POST /api/auth/register
 router.post('/register', (req, res) => {
   const { username, email, password, entityName } = req.body;
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: 'Champs username, email et password requis' });
+  const normalizedEmail = (email || '').trim().toLowerCase();
+  const trimmedEntity = (entityName || '').trim();
+  if (!normalizedEmail || !password || !trimmedEntity) {
+    return res.status(400).json({ error: 'Champs email, entité et password requis' });
   }
   if (password.length < 6) {
     return res.status(400).json({ error: 'Le mot de passe doit faire au moins 6 caractères' });
   }
 
-  const existing = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(username, email);
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
   if (existing) {
-    return res.status(409).json({ error: 'Utilisateur ou email déjà existant' });
+    return res.status(409).json({ error: 'Email déjà existant' });
+  }
+
+  const baseUsername = (username || normalizedEmail).split('@')[0] || 'user';
+  let finalUsername = baseUsername;
+  let suffix = 0;
+  while (db.prepare('SELECT id FROM users WHERE username = ?').get(finalUsername)) {
+    suffix += 1;
+    finalUsername = `${baseUsername}${suffix}`;
   }
 
   let entityId = null;
-  if (entityName && entityName.trim()) {
-    const trimmed = entityName.trim();
+  if (trimmedEntity) {
     // Check if entity exists
-    const existingEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get(trimmed);
+    const existingEntity = db.prepare('SELECT id FROM entities WHERE name = ?').get(trimmedEntity);
     if (existingEntity) {
       entityId = existingEntity.id;
     } else {
       // Create entity with default settings
-      const result = db.prepare('INSERT INTO entities (name, settings) VALUES (?, ?)').run(trimmed, JSON.stringify(DEFAULT_ENTITY_SETTINGS));
+      const result = db.prepare('INSERT INTO entities (name, settings) VALUES (?, ?)').run(trimmedEntity, JSON.stringify(DEFAULT_ENTITY_SETTINGS));
       entityId = result.lastInsertRowid;
     }
   }
 
   const hash = bcrypt.hashSync(password, 10);
-  const result = db.prepare('INSERT INTO users (username, email, password_hash, entity_id) VALUES (?, ?, ?, ?)').run(username, email, hash, entityId);
-  const user = { id: result.lastInsertRowid, username, email, role: 'user', entity_id: entityId };
+  const result = db.prepare('INSERT INTO users (username, email, password_hash, entity_id) VALUES (?, ?, ?, ?)').run(finalUsername, normalizedEmail, hash, entityId);
+  const user = { id: result.lastInsertRowid, username: finalUsername, email: normalizedEmail, role: 'user', entity_id: entityId };
   const token = generateToken(user);
 
   // Include entity info
@@ -72,12 +81,13 @@ router.post('/register', (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Champs username et password requis' });
+  const { identifier, username, email, password } = req.body;
+  const loginValue = (identifier || email || username || '').trim();
+  if (!loginValue || !password) {
+    return res.status(400).json({ error: 'Champs email ou username et password requis' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  const user = db.prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(loginValue, loginValue);
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ error: 'Identifiants invalides' });
   }

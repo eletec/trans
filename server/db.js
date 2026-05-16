@@ -92,6 +92,25 @@ try {
   db.exec("ALTER TABLE users ADD COLUMN preferences TEXT");
 }
 
+// Migration: add email column to users table (for older databases)
+let emailColumnAdded = false;
+try {
+  db.prepare("SELECT email FROM users LIMIT 1").get();
+} catch (e) {
+  db.exec("ALTER TABLE users ADD COLUMN email TEXT");
+  emailColumnAdded = true;
+}
+
+if (emailColumnAdded) {
+  db.exec("UPDATE users SET email = username WHERE email IS NULL OR email = ''");
+}
+
+try {
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)");
+} catch (e) {
+  // ignore index creation errors on legacy data
+}
+
 // Migration: add entity_id column to users table
 try {
   db.prepare("SELECT entity_id FROM users LIMIT 1").get();

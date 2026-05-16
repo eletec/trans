@@ -1,6 +1,8 @@
 import React, { useState, createContext, useContext, useEffect } from 'react';
 import Layout from './components/Layout';
 import LoginForm from './components/LoginForm';
+import LandingPage from './components/LandingPage';
+import AuthModal from './components/AuthModal';
 import PaletteGrid from './components/PaletteGrid';
 import TruckConfig from './components/TruckConfig';
 import Canvas2D from './components/Canvas2D';
@@ -312,6 +314,8 @@ export default function App() {
   const [showPaletteConfig, setShowPaletteConfig] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('register');
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [currentProjectName, setCurrentProjectName] = useState('');
   const [saveFlash, setSaveFlash] = useState(false);
@@ -383,8 +387,18 @@ export default function App() {
     })();
   }, [user]);
 
-  const handleLogin = (userData) => setUser(userData);
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setShowAuthModal(false);
+  };
   const handleLogout = () => { api.logout(); setUser(null); };
+
+  const openAuth = (mode) => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
+
+  const DONATE_URL = 'https://www.paypal.com/ncp/payment/JJA5BPB7NCQSJ';
 
   const addPalette = (template) => {
     setPalettes(prev => [...prev, {
@@ -682,8 +696,26 @@ ${truckSections}
 
   return (
     <AppContext.Provider value={ctx}>
-      <Layout>
-        {!user && <LoginForm onLogin={handleLogin} />}
+      <Layout donateUrl={DONATE_URL}>
+        {!user && (
+          <>
+            <LandingPage
+              onOpenRegister={() => openAuth('register')}
+              onOpenLogin={() => openAuth('login')}
+              donateUrl={DONATE_URL}
+            />
+            {showAuthModal && (
+              <AuthModal onClose={() => setShowAuthModal(false)}>
+                <LoginForm
+                  onLogin={handleLogin}
+                  initialMode={authMode}
+                  onModeChange={setAuthMode}
+                  embedded
+                />
+              </AuthModal>
+            )}
+          </>
+        )}
         {user && (
           <div className="flex flex-col lg:flex-row gap-2 sm:gap-4 h-full w-full">
             {/* Left panel: data entry */}

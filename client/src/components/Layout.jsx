@@ -1,14 +1,26 @@
 import React, { useContext, useState } from 'react';
-import { Truck, FolderOpen, SlidersHorizontal, Settings, Save, Check, Menu, X, History, Download } from 'lucide-react';
+import { Truck, FolderOpen, SlidersHorizontal, Settings, Save, Check, Menu, X, History, Download, HeartHandshake } from 'lucide-react';
 import { AppContext } from '../App';
 import UserProfileMenu from './UserProfileMenu';
 import { useT } from '../i18n';
 
-export default function Layout({ children }) {
+export default function Layout({ children, donateUrl }) {
   const { user, setShowPrefs, setShowProjects, setShowPaletteConfig, setShowHistory, setShowExport,
     currentProjectName, currentProjectId, handleQuickSave, saveFlash } = useContext(AppContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const t = useT();
+  const donateLabel = t('landing.donateTitle');
+  const renderDonateLink = (className = '') => (
+    <a
+      href={donateUrl}
+      target="_blank"
+      rel="noreferrer"
+      className={`inline-flex items-center gap-1.5 rounded-full border border-amber-200/50 bg-amber-400/20 text-amber-50 text-[11px] font-semibold px-2.5 py-1 hover:bg-amber-400/30 dark:border-amber-200/30 dark:bg-amber-300/20 dark:text-amber-100 ${className}`}
+    >
+      <HeartHandshake className="w-3.5 h-3.5" />
+      <span className="whitespace-nowrap">{donateLabel}</span>
+    </a>
+  );
 
   return (
     <div className="w-screen h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors overflow-hidden">
@@ -42,57 +54,63 @@ export default function Layout({ children }) {
             )}
           </div>
 
-          {user && (
-            <>
-              {/* Desktop nav */}
-              <nav className="hidden md:flex items-center gap-2">
-                <button
-                  onClick={() => setShowProjects(true)}
-                  className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-                >
-                  <FolderOpen className="w-4 h-4 inline -mt-0.5" /> {t('nav.projects')}
-                </button>
-                <button
-                  onClick={() => setShowPaletteConfig(true)}
-                  className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-                >
-                  <SlidersHorizontal className="w-4 h-4 inline -mt-0.5" /> {t('nav.paletteConfig')}
-                </button>
-                <button
-                  onClick={() => setShowPrefs(true)}
-                  className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-                >
-                  <Settings className="w-4 h-4 inline -mt-0.5" /> {t('nav.prefs')}
-                </button>
-                <button
-                  onClick={() => setShowHistory(true)}
-                  className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-                >
-                  <History className="w-4 h-4 inline -mt-0.5" /> {t('nav.history')}
-                </button>
-                <button
-                  onClick={() => setShowExport(true)}
-                  className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
-                >
-                  <Download className="w-4 h-4 inline -mt-0.5" /> {t('nav.export')}
-                </button>
-                <div className="ml-2">
-                  <UserProfileMenu />
-                </div>
-              </nav>
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                {/* Desktop nav */}
+                <nav className="hidden md:flex items-center gap-2">
+                  <button
+                    onClick={() => setShowProjects(true)}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
+                  >
+                    <FolderOpen className="w-4 h-4 inline -mt-0.5" /> {t('nav.projects')}
+                  </button>
+                  <button
+                    onClick={() => setShowPaletteConfig(true)}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
+                  >
+                    <SlidersHorizontal className="w-4 h-4 inline -mt-0.5" /> {t('nav.paletteConfig')}
+                  </button>
+                  <button
+                    onClick={() => setShowPrefs(true)}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
+                  >
+                    <Settings className="w-4 h-4 inline -mt-0.5" /> {t('nav.prefs')}
+                  </button>
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
+                  >
+                    <History className="w-4 h-4 inline -mt-0.5" /> {t('nav.history')}
+                  </button>
+                  <button
+                    onClick={() => setShowExport(true)}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-blue-700 hover:bg-blue-900 dark:bg-gray-600 dark:hover:bg-gray-500 transition-colors"
+                  >
+                    <Download className="w-4 h-4 inline -mt-0.5" /> {t('nav.export')}
+                  </button>
+                  {donateUrl && renderDonateLink('ml-1')}
+                  <div className="ml-2">
+                    <UserProfileMenu />
+                  </div>
+                </nav>
 
-              {/* Mobile hamburger */}
-              <div className="flex items-center gap-2 md:hidden">
-                <UserProfileMenu />
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </button>
-              </div>
-            </>
-          )}
+                {/* Mobile hamburger */}
+                <div className="flex items-center gap-2 md:hidden">
+                  {donateUrl && renderDonateLink()}
+                  <UserProfileMenu />
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="p-2 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
+                </div>
+              </>
+            ) : (
+              donateUrl ? renderDonateLink() : null
+            )}
+          </div>
         </div>
 
         {/* Mobile menu dropdown */}

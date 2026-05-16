@@ -3,14 +3,24 @@ services:
     build: .
     container_name: easypacking
     restart: unless-stopped
-    ports:
-      - "3001:3001"
     volumes:
       - easypacking-data:/data
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - JWT_SECRET=changez-moi-en-production
+      - JWT_SECRET=${JWT_SECRET:-changez-moi-en-production}
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.easypacking.rule=Host(`${DOMAIN:-easypacking.localhost}`)"
+      - "traefik.http.routers.easypacking.entrypoints=websecure"
+      - "traefik.http.routers.easypacking.tls.certresolver=letsencrypt"
+      - "traefik.http.services.easypacking.loadbalancer.server.port=3001"
 
 volumes:
   easypacking-data:
+
+networks:
+  traefik:
+    external: true

@@ -1,4 +1,4 @@
-const BASE = '/api';
+const BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'http://localhost:3001/api' : '/api');
 
 function getToken() {
   return localStorage.getItem('adctrans_token');
@@ -25,23 +25,34 @@ async function request(path, options = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
-  const data = await res.json();
-  if (res.status === 401) {
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
+  if (res.status === 401 && token) {
     // Token expired — auto-logout
     setToken(null);
     setUser(null);
     window.location.reload();
     throw new Error('Session expirée — veuillez vous reconnecter');
   }
-  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-  return data;
+  if (!res.ok) {
+    const message = data && data.error ? data.error : `Erreur serveur (${res.status})`;
+    throw new Error(message);
+  }
+  return data || {};
 }
 
 export const api = {
   // Auth
-  async login(username, password) {
+  async login(identifier, password) {
     const data = await request('/auth/login', {
-      method: 'POST', body: JSON.stringify({ username, password })
+      method: 'POST', body: JSON.stringify({ identifier, password })
     });
     setToken(data.token);
     setUser(data.user);
